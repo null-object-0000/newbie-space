@@ -41,7 +41,8 @@ export const projects: Project[] = [
     stars: 1,
     desc: '你的 Java 全链路性能调优沙盒与容量规划可视化推演平台。',
     stack: ['java', 'vue'],
-    url: 'https://github.com/null-object-0000/newbie-java-doctor'
+    url: 'https://github.com/null-object-0000/newbie-java-doctor',
+    demoUrl: 'https://null-object-0000.github.io/newbie-java-doctor/'
   }
 ]
 
