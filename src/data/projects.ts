@@ -38,7 +38,7 @@ export const projects: Project[] = [
   {
     id: 4,
     name: 'Newbie Java Doctor',
-    stars: 1,
+    stars: 'New',
     desc: '你的 Java 全链路性能调优沙盒与容量规划可视化推演平台。',
     stack: ['java', 'vue'],
     url: 'https://github.com/null-object-0000/newbie-java-doctor',
