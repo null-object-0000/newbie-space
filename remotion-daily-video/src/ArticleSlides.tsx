@@ -32,24 +32,62 @@ const highlightStyle: React.CSSProperties = {
 };
 
 // ==========================================
-// 场景 1：黄金三秒开头 (0-4秒) - 开门见山版
+// 场景 1：黄金三秒开头 + IP 徽章 + 每日一问标签
 // ==========================================
 const IntroScene: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
+  // 主标题的弹簧动画
   const scale = spring({ fps, frame, config: { damping: 14 } });
   const opacity = interpolate(frame, [0, 10], [0, 1]);
+  
+  // “每日一问”标签稍微延迟一丢丢，制造组合拳的打击感
+  const tagPop = spring({ fps, frame: frame - 5, config: { damping: 12 } });
 
   return (
     <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center', padding: 40 }}>
-      {/* 主标题：直接抛出核心疑问 */}
+      {/* 顶部个人 IP 徽章 */}
+      <div style={{
+        position: 'absolute',
+        top: 150,
+        background: 'rgba(0, 242, 254, 0.1)',
+        border: '1px solid rgba(0, 242, 254, 0.4)',
+        padding: '12px 30px',
+        borderRadius: 40,
+        color: '#00f2fe',
+        fontSize: 32,
+        fontWeight: 'bold',
+        boxShadow: '0 0 20px rgba(0, 242, 254, 0.2)',
+        opacity: interpolate(frame, [5, 20], [0, 1]),
+        transform: `translateY(${interpolate(frame, [5, 20], [-20, 0], { extrapolateRight: 'clamp' })}px)`
+      }}>
+        👨‍💻 古法 Java 程序员 @小倪
+      </div>
+
+      {/* 💡 新增：系列栏目标签 */}
+      <div style={{
+        background: 'linear-gradient(90deg, #ff2a55 0%, #ff4066 100%)',
+        padding: '10px 24px',
+        borderRadius: '12px',
+        color: '#ffffff',
+        fontSize: 45,
+        fontWeight: 'bold',
+        marginBottom: 30, // 和主标题拉开一点距离
+        boxShadow: '0 8px 20px rgba(255, 42, 85, 0.4)',
+        transform: `scale(${tagPop})`,
+        letterSpacing: 2
+      }}>
+        🔥 每日一问
+      </div>
+
+      {/* 主标题 */}
       <h1 style={{ ...titleStyle, transform: `scale(${scale})`, opacity, lineHeight: 1.4 }}>
         <span style={{ color: '#ffd700' }}>Java 程序</span><br />
         到底是怎么运行的？
       </h1>
       
-      {/* 副标题卡片：补充痛点和视频价值 */}
+      {/* 副标题卡片 */}
       <div
         style={{
           marginTop: 60,
@@ -57,7 +95,7 @@ const IntroScene: React.FC = () => {
           border: '1px solid rgba(255, 255, 255, 0.2)',
           padding: '25px 45px',
           borderRadius: 16,
-          opacity: interpolate(frame, [25, 40], [0, 1]), // 稍晚一点平滑浮现
+          opacity: interpolate(frame, [25, 40], [0, 1]),
         }}
       >
         <p style={{ fontSize: 40, color: '#e8e8e8', margin: 0, fontWeight: 'normal', textAlign: 'center', lineHeight: 1.6 }}>
@@ -70,7 +108,7 @@ const IntroScene: React.FC = () => {
 };
 
 // ==========================================
-// 场景 2：编译 (改为完美居中)
+// 场景 2：编译
 // ==========================================
 const CompileScene: React.FC = () => {
   const frame = useCurrentFrame();
@@ -100,7 +138,7 @@ const CompileScene: React.FC = () => {
 };
 
 // ==========================================
-// 场景 3：类加载与内存 (改为完美居中)
+// 场景 3：类加载与内存
 // ==========================================
 const LoadScene: React.FC = () => {
   const frame = useCurrentFrame();
@@ -145,7 +183,7 @@ const LoadScene: React.FC = () => {
 };
 
 // ==========================================
-// 场景 4：执行 (完美居中)
+// 场景 4：执行
 // ==========================================
 const ExecuteScene: React.FC = () => {
   const frame = useCurrentFrame();
@@ -181,7 +219,7 @@ const ExecuteScene: React.FC = () => {
           transform: `scale(${jitPop})`,
         }}
       >
-        <span style={{ fontSize: 50, fontWeight: 'bold', color: '#ffffff' }}>
+        <span style={{ fontSize: 40, fontWeight: 'bold', color: '#ffffff' }}>
           ⚡ JIT 编译为本地机器码，大幅提速
         </span>
       </div>
@@ -190,7 +228,7 @@ const ExecuteScene: React.FC = () => {
 };
 
 // ==========================================
-// 场景 5：全流程总结 (改为完美居中)
+// 场景 5：全流程总结 + 结尾 IP 引导
 // ==========================================
 const SummaryScene: React.FC = () => {
   const frame = useCurrentFrame();
@@ -198,11 +236,13 @@ const SummaryScene: React.FC = () => {
   
   const imgPop = spring({ fps, frame: frame - 10, config: { damping: 14 } });
   const textOpacity = interpolate(frame, [30, 45], [0, 1]);
+  // 结尾 IP 延迟出现
+  const ipOpacity = interpolate(frame, [60, 75], [0, 1], { extrapolateRight: 'clamp' });
 
   return (
-    <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center', padding: 40 }}>
+    <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center', padding: 20 }}>
       <h2 style={titleStyle}>
-        4. <span style={highlightStyle}>一句话总结</span>
+        <span style={highlightStyle}>一句话总结</span>
       </h2>
 
       <div style={{ marginTop: 60, transform: `scale(${imgPop})` }}>
@@ -222,6 +262,29 @@ const SummaryScene: React.FC = () => {
            交由执行引擎处理<br/>
            <strong style={{color: '#ffd700', fontSize: 42}}>这就是跨平台与高性能的秘密。</strong>
          </p>
+      </div>
+
+      {/* 💡 新增：底部结尾强力署名与互动引导 */}
+      <div style={{
+        position: 'absolute',
+        bottom: 225,
+        opacity: ipOpacity,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 15
+      }}>
+        <div style={{ fontSize: 34, color: '#a0a0a0', letterSpacing: 2 }}>点赞收藏，和老倪一起死磕底层</div>
+        <div style={{
+          fontSize: 50,
+          fontWeight: '900',
+          background: 'linear-gradient(90deg, #ffd700 0%, #ff8c00 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          textShadow: '0 4px 15px rgba(255, 140, 0, 0.3)'
+        }}>
+          古法 Java 程序员 @小倪
+        </div>
       </div>
     </AbsoluteFill>
   );
