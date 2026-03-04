@@ -12,19 +12,19 @@
             <h2 class="blog-title">技术专栏</h2>
             <p class="blog-subtitle">分享代码、架构设计与生活随笔</p>
           </div>
-          <!-- <div class="blog-filters">
-            <span class="filter-tag" :class="{ active: currentFilter === 'all' }" @click="currentFilter = 'all'">
+          <div class="blog-filters">
+            <span class="filter-tag" :class="{ active: currentSeries === 'all' }" @click="currentSeries = 'all'">
               全部
             </span>
-            <span class="filter-tag" :class="{ active: currentFilter === 'frontend' }"
-              @click="currentFilter = 'frontend'">
-              前端
+            <span class="filter-tag" :class="{ active: currentSeries === '每月故障' }"
+              @click="currentSeries = '每月故障'">
+              每月故障
             </span>
-            <span class="filter-tag" :class="{ active: currentFilter === 'backend' }"
-              @click="currentFilter = 'backend'">
-              后端
+            <span class="filter-tag" :class="{ active: currentSeries === '每日一题' }"
+              @click="currentSeries = '每日一题'">
+              每日一题
             </span>
-          </div> -->
+          </div>
         </div>
 
         <!-- 文章列表 -->
@@ -70,16 +70,15 @@ import AppFooter from '@/components/AppFooter.vue'
 
 const router = useRouter()
 const { isDark } = useTheme()
-const currentFilter = ref('all')
+const currentSeries = ref<string>('all')
 
 const allPosts = getAllPosts()
 
 const filteredPosts = computed(() => {
-  if (currentFilter.value === 'all') {
+  if (currentSeries.value === 'all') {
     return allPosts
   }
-  // 这里可以根据标签过滤，暂时返回全部
-  return allPosts
+  return allPosts.filter(p => p.series === currentSeries.value)
 })
 
 const goToPost = (slug: string) => {

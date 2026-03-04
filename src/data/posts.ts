@@ -5,6 +5,7 @@
  * ---
  * date: 发布日期，格式 YYYY-MM 或 YYYY-MM-DD（必填）
  * author: 作者名称（可选，默认为 "Newbie Space"）
+ * series: 系列名称（可选），如 每月故障、每日一题
  * tags: 标签数组（可选）
  *   - 标签1
  *   - 标签2
@@ -25,6 +26,7 @@ export interface PostMeta {
   title: string
   date: string
   author?: string         // 作者名称
+  series?: string         // 系列，如 每月故障、每日一题
   excerpt?: string
   readTime?: number
   tags?: string[]
@@ -78,6 +80,7 @@ function parseAllPosts(): PostMeta[] {
       title,
       date: frontmatter.date,
       author: frontmatter.author || 'Newbie Space',  // 默认作者
+      series: frontmatter.series,
       excerpt: excerpt || undefined,
       readTime,
       tags: frontmatter.tags,
@@ -100,4 +103,9 @@ export function getPostBySlug(slug: string): PostMeta | undefined {
 
 export function getAllPosts(): PostMeta[] {
   return posts
+}
+
+/** 按系列筛选文章，返回该系列下按日期倒序的文章列表 */
+export function getPostsBySeries(series: string): PostMeta[] {
+  return posts.filter(p => p.series === series)
 }
