@@ -1,0 +1,22 @@
+{
+  "name": "remotion-daily-video",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "remotion studio",
+    "build": "remotion render index.ts ArticleSlides out/daily-2026-03-04.mp4",
+    "render": "remotion render index.ts ArticleSlides out/daily-2026-03-04.mp4",
+    "export-slides": "remotion render index.ts ArticleSlides out/slides --frames=0,240,480,720,960,1200,1440,1680,1920 --image-format=png"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "remotion": "^4.0.0"
+  },
+  "devDependencies": {
+    "@remotion/cli": "^4.0.0",
+    "@types/react": "^18.2.0",
+    "typescript": "^5.0.0"
+  }
+}
