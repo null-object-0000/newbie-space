@@ -34,6 +34,15 @@ export const projects: Project[] = [
     desc: '将网页版 LLM 转换为标准的 OpenAI 兼容 API。',
     stack: ['java', 'vue'],
     url: 'https://github.com/null-object-0000/any-ai-bridge'
+  },
+  {
+    id: 4,
+    name: 'Newbie Java Doctor',
+    stars: 'New',
+    desc: '你的 Java 全链路性能调优沙盒与容量规划可视化推演平台。',
+    stack: ['java', 'vue'],
+    url: 'https://github.com/null-object-0000/newbie-java-doctor',
+    demoUrl: 'https://null-object-0000.github.io/newbie-java-doctor/'
   }
 ]
 
