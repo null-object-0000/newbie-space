@@ -33,6 +33,12 @@
         "icon": "/icons/tinypng_com.ico",
         "link": "https://tinypng.com/",
         "desc": "Free online image optimizer for faster websites! Reduce the file size of your AVIF, WEBP, JPEG and P"
+      },
+      {
+        "name": "Umami",
+        "icon": "/icons/umami_is.ico",
+        "link": "https://umami.is/",
+        "desc": "Umami is a simple, fast, privacy-friendly alternative to Google Analytics."
       }
     ]
   },
