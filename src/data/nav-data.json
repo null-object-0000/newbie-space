@@ -328,6 +328,12 @@
         "icon": "/icons/yunwu_ai.png",
         "link": "https://yunwu.ai/",
         "desc": "提供稳定可靠的API中转服务，支持ChatGPT、Claude等多种AI模型，国内直连无需代理，低延迟高并发，按量计费更经济。"
+      },
+      {
+        "name": "专为中国用户优化的Skills社区",
+        "icon": "/icons/skillhub_tencent_com.png",
+        "link": "https://skillhub.tencent.com/",
+        "desc": "专为中国用户优化的Skills社区，SkillHub 精选 Top 50 高质量 AI Skills，经过安全审核与多维度评估，助你发现最实用的 AI 技能。"
       }
     ]
   }
