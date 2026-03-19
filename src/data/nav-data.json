@@ -108,6 +108,25 @@
             "name": "应用诊断平台",
             "link": "https://atp.console.aliyun.com/",
             "icon": "bug"
+          },
+          {
+            "name": "Coding Plan",
+            "icon": "/icons/bailian_console_aliyun_com.svg",
+            "link": "https://bailian.console.aliyun.com/cn-beijing/?tab=coding-plan#/efm/detail",
+            "desc": "百炼控制台是阿里云大模型服务平台，提供AI模型训练、部署、推理一站式服务，支持多种大模型框架，助力企业快速构建AI应用。"
+          }
+        ]
+      },
+      {
+        "name": "火山引擎-你的AI云",
+        "icon": "/icons/volcengine_com.png",
+        "link": "https://www.volcengine.com/",
+        "desc": "火山引擎是字节跳动旗下的云与AI服务平台。在AI时代，聚焦豆包大模型和AI云原生技术，为企业提供从 Agent 开发到部署的一站式服务，助力企业AI转型与创新发展。",
+        "subLinks": [
+          {
+            "name": "Coding Plan",
+            "link": "https://console.volcengine.com/ark/region:ark+cn-beijing/openManagement?LLM=%7B%7D&advancedActiveKey=subscribe",
+            "desc": "主流国产编程模型全覆盖，多生态兼容，模型工具不限，丝滑不降速！"
           }
         ]
       }
