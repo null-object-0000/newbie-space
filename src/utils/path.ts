@@ -7,7 +7,7 @@
  * 动态计算 base 路径
  * 支持：
  * - https://null-object-0000.github.io/newbie-space/ (GitHub Pages 子路径)
- * - https://nichangen.com (自定义域名根路径)
+ * - https://snewbie.site (自定义域名根路径)
  */
 export function getBasePath(): string {
   if (typeof window === 'undefined') {
