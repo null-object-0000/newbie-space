@@ -1,7 +1,10 @@
 <template>
   <footer class="site-footer">
     <div class="footer-container">
-      <p>© 2026 Newbie Space. Built with Vue 3 & Vite.</p>
+      <p>© 2026 Newbie Space. Built with Vue 3 & Vite.
+        <span class="separator">·</span>
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" class="footer-link">苏ICP备2024114357号-5</a>
+      </p>
       <div class="footer-links">
         <a href="https://github.com/null-object-0000" target="_blank" class="footer-link">GitHub</a>
       </div>
@@ -69,6 +72,10 @@
 .footer-container p {
   margin: 0;
   line-height: 1.5;
+}
+
+.separator {
+  margin: 0 0.5rem;
 }
 
 .footer-links {
