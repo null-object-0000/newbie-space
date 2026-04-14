@@ -40,14 +40,13 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup Node
-        uses: actions/setup-node@v6
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: 24
-          cache: npm
+          bun-version: latest
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install
 
       - name: Validate inputs
         id: validate
@@ -90,7 +89,7 @@ jobs:
           INPUT_URL: ${{ inputs.url }}
           INPUT_CATEGORY: ${{ inputs.category }}
           INPUT_DESCRIPTION: ${{ inputs.description }}
-        run: npm run add-nav
+        run: bun run add-nav
 
       - name: Check for changes
         id: changes
