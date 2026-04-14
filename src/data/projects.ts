@@ -29,11 +29,11 @@ export const projects: Project[] = [
   },
   {
     id: 3,
-    name: 'Any AI Bridge',
-    stars: 1,
-    desc: '将网页版 LLM 转换为标准的 OpenAI 兼容 API。',
-    stack: ['java', 'vue'],
-    url: 'https://github.com/null-object-0000/any-ai-bridge'
+    name: 'AI Clash',
+    stars: 2,
+    desc: '告别来回切网页！在侧边栏一键向 DeepSeek、豆包、千问等多个 AI 同步提问，并自动为你提炼最终的“最优总结”。',
+    stack: ['chrome-extension'],
+    url: 'https://github.com/null-object-0000/ai-clash'
   },
   {
     id: 4,
