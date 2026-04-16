@@ -69,6 +69,18 @@
             "link": "https://mp.weixin.qq.com/debug/cgi-bin/sandbox?t=sandbox/login"
           }
         ]
+      },
+      {
+        "name": "Chrome 应用商店开发者信息中心",
+        "icon": "chrome",
+        "link": "https://chrome.google.com/webstore/devconsole/",
+        "desc": "Discover great apps, games, extensions and themes for Chrome."
+      },
+      {
+        "name": "Microsoft 合作伙伴中心",
+        "icon": "partner",
+        "link": "https://partner.microsoft.com/zh-cn/dashboard/home",
+        "desc": "Microsoft 合作伙伴中心 Edge 插件开发者平台，提供插件开发、发布、管理等功能，助力开发者轻松创建和分发高质量的 Edge 插件，提升用户体验。"
       }
     ]
   },
