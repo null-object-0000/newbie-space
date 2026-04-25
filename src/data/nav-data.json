@@ -371,6 +371,12 @@
         "icon": "/icons/skillhub_tencent_com.png",
         "link": "https://skillhub.tencent.com/",
         "desc": "专为中国用户优化的Skills社区，SkillHub 精选 Top 50 高质量 AI Skills，经过安全审核与多维度评估，助你发现最实用的 AI 技能。"
+      },
+      {
+        "name": "Openrouter",
+        "icon": "/icons/openrouter_ai.ico",
+        "link": "https://openrouter.ai/",
+        "desc": "The unified interface for LLMs. Find the best models & prices for your prompts"
       }
     ]
   }
