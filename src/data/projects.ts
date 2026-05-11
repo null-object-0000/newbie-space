@@ -22,7 +22,7 @@ export const projects: Project[] = [
   {
     id: 2,
     name: 'AI Clash',
-    stars: 2,
+    stars: 11,
     desc: '告别来回切网页！在侧边栏一键向 DeepSeek、豆包、千问等多个 AI 同步提问，并自动为你提炼最终的“最优总结”。',
     stack: ['chrome-extension'],
     url: 'https://github.com/null-object-0000/ai-clash'
