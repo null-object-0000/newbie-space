@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/generate-git-timestamps.cjs && vite-ssg build && node scripts/restructure-html.js && node scripts/fix-asset-paths.js && node scripts/create-404.js",
+    "build": "node scripts/generate-git-timestamps.cjs && node scripts/generate-project-stars.js && vite-ssg build && node scripts/restructure-html.js && node scripts/fix-asset-paths.js && node scripts/create-404.js",
     "preview": "vite preview",
     "add-nav": "node scripts/add-nav.js"
   },
@@ -12,17 +12,17 @@
     "@fontsource/noto-sans-sc": "^5.2.9",
     "@fontsource/outfit": "^5.2.8",
     "@giscus/vue": "^3.1.1",
-    "axios": "^1.15.0",
+    "axios": "^1.16.0",
     "highlight.js": "^11.11.1",
     "lucide-vue-next": "^0.562.0",
-    "vue": "^3.5.32",
+    "vue": "^3.5.34",
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
     "@types/highlight.js": "^9.12.4",
     "@types/markdown-it": "^14.1.2",
     "@types/markdown-it-container": "^2.0.11",
-    "@types/node": "^25.6.0",
+    "@types/node": "^25.6.2",
     "@vitejs/plugin-vue": "^5.2.4",
     "cheerio": "^1.2.0",
     "gray-matter": "^4.0.3",

@@ -26,10 +26,11 @@
 
 <script setup lang="ts">
 import { useTheme } from '@/composables/useTheme'
-import { projects } from '@/data/projects'
+import { useProjects } from '@/composables/useProjects'
 import ProjectCard from '@/components/ProjectCard.vue'
 
 const { isDark } = useTheme()
+const { projects } = useProjects()
 </script>
 
 <style scoped>

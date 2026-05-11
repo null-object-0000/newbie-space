@@ -98,8 +98,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTheme } from '@/composables/useTheme'
+import { useProjects } from '@/composables/useProjects'
 import { getAllPosts } from '@/data/posts'
-import { Project, projects } from '@/data/projects'
+import { Project } from '@/data/projects'
 import navData from '@/data/nav-data.json'
 import {
   PenTool, User, Compass,
@@ -108,6 +109,7 @@ import {
 
 const router = useRouter()
 const { isDark } = useTheme()
+const { projects } = useProjects()
 
 // 获取最新文章
 const posts = getAllPosts()
@@ -115,7 +117,7 @@ const latestPost = posts[0]
 
 // 获取 stars 最多的项目
 const featuredProject = computed(() => {
-  if (projects.length === 0) return null
+  if (projects.value.length === 0) return null
 
   // 将 stars 转换为数字进行比较，字符串（如 "New"）视为 0
   const getStarsValue = (stars: number | string): number => {
@@ -127,7 +129,7 @@ const featuredProject = computed(() => {
     return 0
   }
 
-  return projects.reduce((max, project) => {
+  return projects.value.reduce((max, project) => {
     const maxStars = getStarsValue(max.stars)
     const currentStars = getStarsValue(project.stars)
     return currentStars > maxStars ? project : max
