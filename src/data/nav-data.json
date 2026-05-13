@@ -319,6 +319,12 @@
         "icon": "/icons/stitch_withgoogle_com.png",
         "link": "https://stitch.withgoogle.com/",
         "desc": "Stitch generates UIs for mobile and web applications, making design ideation fast and easy."
+      },
+      {
+        "name": "Hermes-agent",
+        "icon": "/icons/hermes_agent_nousresearch_com.ico",
+        "link": "https://hermes-agent.nousresearch.com/",
+        "desc": "An open-source agent that grows with you — learns your projects, builds its own skills, and reaches"
       }
     ]
   },
