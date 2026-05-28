@@ -383,6 +383,12 @@
         "icon": "/icons/openrouter_ai.ico",
         "link": "https://openrouter.ai/",
         "desc": "The unified interface for LLMs. Find the best models & prices for your prompts"
+      },
+      {
+        "name": "Qwencloud",
+        "icon": "/icons/qwencloud_com.png",
+        "link": "https://www.qwencloud.com/",
+        "desc": "Qwen Cloud is an AI-native platform powering Qwen3.6, Wan video, and CosyVoice TTS with 99.9% uptime"
       }
     ]
   }
