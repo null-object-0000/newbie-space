@@ -39,6 +39,12 @@
         "icon": "/icons/umami_is.ico",
         "link": "https://umami.is/",
         "desc": "Umami is a simple, fast, privacy-friendly alternative to Google Analytics."
+      },
+      {
+        "name": "AI智能图片设计工具 - AI设计神器",
+        "icon": "/icons/logosc_cn.svg",
+        "link": "https://www.logosc.cn/design/",
+        "desc": "只需上传一张图片就能生成精美设计！AI设计神器能够自动识别照片去背景，优化配色，添加智能元素帮你轻松构建一个有趣的设计。"
       }
     ]
   },
