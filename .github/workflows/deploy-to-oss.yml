@@ -79,21 +79,15 @@ jobs:
               OSS_TARGET="oss://${OSS_BUCKET}"
             fi
             
-            # 清空目标路径下的所有历史文件
-            echo "正在清空阿里云 OSS 目标路径下的所有历史文件..."
-            ossutil rm ${OSS_TARGET} \
-              --recursive \
-              --force \
-              -e ${OSS_ENDPOINT} \
-              -i "${{ secrets.OSS_ACCESS_KEY_ID }}" \
-              -k "${{ secrets.OSS_SECRET_ACCESS_KEY }}"
-            
-            # 使用 ossutil sync 同步文件
+            # 使用 ossutil sync 同步文件（类似 aws s3 sync）
+            # --update 只上传更新的文件
+            # --delete 删除目标中不存在的文件（确保目标与源完全一致，在同步过程中删除以保证零停机部署）
             # -e 指定 endpoint
             # -i 指定 AccessKey ID
             # -k 指定 AccessKey Secret
             ossutil sync dist/ ${OSS_TARGET} \
               --update \
+              --delete \
               -e ${OSS_ENDPOINT} \
               -i "${{ secrets.OSS_ACCESS_KEY_ID }}" \
               -k "${{ secrets.OSS_SECRET_ACCESS_KEY }}"
@@ -107,16 +101,11 @@ jobs:
               S3_PATH="s3://${OSS_BUCKET}"
             fi
             
-            # 清空 S3 兼容 OSS 目标路径下的所有历史文件
-            echo "正在清空 S3 兼容 OSS 目标路径下的所有历史文件..."
-            aws s3 rm ${S3_PATH} \
-              --recursive \
-              --endpoint-url ${OSS_ENDPOINT} \
-              --region ${AWS_DEFAULT_REGION}
-            
             # 上传文件到 S3 兼容的 OSS
             # --endpoint-url 使用基础端点（不包含 bucket 名称）
+            # --delete 参数会在同步过程中/完成后自动删除目标中不存在的文件，实现零停机部署
             aws s3 sync dist/ ${S3_PATH} \
               --endpoint-url ${OSS_ENDPOINT} \
+              --delete \
               --region ${AWS_DEFAULT_REGION}
           fi
