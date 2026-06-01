@@ -44,11 +44,17 @@ jobs:
             chmod +x ossutil
             sudo mv ossutil /usr/local/bin/
           else
-            echo "检测到非阿里云 OSS，安装 AWS CLI"
-            # 安装 AWS CLI
-            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-            unzip -q awscliv2.zip
-            sudo ./aws/install --update
+            echo "检测到非阿里云 OSS，检查 AWS CLI 是否已安装"
+            if command -v aws &> /dev/null; then
+              echo "AWS CLI 已安装，跳过下载与安装步骤"
+              aws --version
+            else
+              echo "AWS CLI 未安装，开始安装 AWS CLI"
+              # 安装 AWS CLI
+              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+              unzip -q awscliv2.zip
+              sudo ./aws/install --update
+            fi
           fi
 
       - name: Upload to OSS
@@ -73,16 +79,21 @@ jobs:
               OSS_TARGET="oss://${OSS_BUCKET}"
             fi
             
-            # 使用 ossutil sync 同步文件（类似 aws s3 sync）
-            # sync 命令会自动递归，支持 --update 和 --delete
-            # --update 只上传更新的文件
-            # --delete 删除目标中不存在的文件（确保目标与源完全一致）
+            # 清空目标路径下的所有历史文件
+            echo "正在清空阿里云 OSS 目标路径下的所有历史文件..."
+            ossutil rm ${OSS_TARGET} \
+              --recursive \
+              --force \
+              -e ${OSS_ENDPOINT} \
+              -i "${{ secrets.OSS_ACCESS_KEY_ID }}" \
+              -k "${{ secrets.OSS_SECRET_ACCESS_KEY }}"
+            
+            # 使用 ossutil sync 同步文件
             # -e 指定 endpoint
             # -i 指定 AccessKey ID
             # -k 指定 AccessKey Secret
             ossutil sync dist/ ${OSS_TARGET} \
               --update \
-              --delete \
               -e ${OSS_ENDPOINT} \
               -i "${{ secrets.OSS_ACCESS_KEY_ID }}" \
               -k "${{ secrets.OSS_SECRET_ACCESS_KEY }}"
@@ -96,11 +107,16 @@ jobs:
               S3_PATH="s3://${OSS_BUCKET}"
             fi
             
+            # 清空 S3 兼容 OSS 目标路径下的所有历史文件
+            echo "正在清空 S3 兼容 OSS 目标路径下的所有历史文件..."
+            aws s3 rm ${S3_PATH} \
+              --recursive \
+              --endpoint-url ${OSS_ENDPOINT} \
+              --region ${AWS_DEFAULT_REGION}
+            
             # 上传文件到 S3 兼容的 OSS
             # --endpoint-url 使用基础端点（不包含 bucket 名称）
-            # --delete 参数会删除目标中不存在的文件
             aws s3 sync dist/ ${S3_PATH} \
               --endpoint-url ${OSS_ENDPOINT} \
-              --delete \
               --region ${AWS_DEFAULT_REGION}
           fi

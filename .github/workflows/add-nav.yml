@@ -138,51 +138,26 @@ jobs:
           
           此 PR 由 GitHub Actions 自动创建。"
           
-          # 使用 GitHub API 创建 PR
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            https://api.github.com/repos/${{ github.repository }}/pulls \
-            -d "{
-              \"title\": \"添加导航链接: ${{ inputs.url }}\",
-              \"body\": $(echo "$PR_BODY" | jq -Rs .),
-              \"head\": \"${{ steps.branch.outputs.name }}\",
-              \"base\": \"main\"
-            }")
+          # 使用 GitHub CLI 检查并创建 PR
+          EXISTING_PR_URL=$(gh pr list --head "${{ steps.branch.outputs.name }}" --base "main" --json url --jq '.[0].url // empty')
           
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          BODY=$(echo "$RESPONSE" | sed '$d')
-          
-          if [ "$HTTP_CODE" = "201" ]; then
-            PR_NUMBER=$(echo "$BODY" | jq -r '.number')
-            PR_URL=$(echo "$BODY" | jq -r '.html_url')
+          if [ -n "$EXISTING_PR_URL" ]; then
+            PR_NUMBER=$(echo "$EXISTING_PR_URL" | grep -oE '[0-9]+$')
+            echo "pull-request-number=$PR_NUMBER" >> $GITHUB_OUTPUT
+            echo "pull-request-url=$EXISTING_PR_URL" >> $GITHUB_OUTPUT
+            echo "ℹ️ PR 已存在: #$PR_NUMBER"
+            echo "PR URL: $EXISTING_PR_URL"
+          else
+            PR_URL=$(gh pr create \
+              --title "添加导航链接: ${{ inputs.url }}" \
+              --body "$PR_BODY" \
+              --head "${{ steps.branch.outputs.name }}" \
+              --base "main")
+            PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
             echo "pull-request-number=$PR_NUMBER" >> $GITHUB_OUTPUT
             echo "pull-request-url=$PR_URL" >> $GITHUB_OUTPUT
             echo "✅ PR 创建成功: #$PR_NUMBER"
             echo "PR URL: $PR_URL"
-          elif [ "$HTTP_CODE" = "422" ]; then
-            # PR 可能已存在，尝试查找现有 PR
-            EXISTING_PR=$(curl -s \
-              -H "Accept: application/vnd.github+json" \
-              -H "Authorization: Bearer $GITHUB_TOKEN" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              "https://api.github.com/repos/${{ github.repository }}/pulls?head=${{ github.repository_owner }}:${{ steps.branch.outputs.name }}&base=main" | jq -r '.[0]')
-            
-            if [ "$EXISTING_PR" != "null" ] && [ -n "$EXISTING_PR" ]; then
-              PR_NUMBER=$(echo "$EXISTING_PR" | jq -r '.number')
-              PR_URL=$(echo "$EXISTING_PR" | jq -r '.html_url')
-              echo "pull-request-number=$PR_NUMBER" >> $GITHUB_OUTPUT
-              echo "pull-request-url=$PR_URL" >> $GITHUB_OUTPUT
-              echo "ℹ️ PR 已存在: #$PR_NUMBER"
-              echo "PR URL: $PR_URL"
-            else
-              echo "⚠️ 创建 PR 失败 (HTTP $HTTP_CODE)"
-              echo "$BODY" | jq -r '.message // .' || echo "$BODY"
-            fi
-          else
-            echo "⚠️ 创建 PR 失败 (HTTP $HTTP_CODE)"
-            echo "$BODY" | jq -r '.message // .' || echo "$BODY"
           fi
 
       - name: Summary
