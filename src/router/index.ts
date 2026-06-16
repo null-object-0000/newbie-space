@@ -30,6 +30,16 @@ export const routes: RouteRecordRaw[] = [
     path: '/projects',
     name: 'projects',
     component: () => import('@/views/Projects.vue')
+  },
+  {
+    path: '/tools',
+    name: 'tools',
+    component: () => import('@/views/Tools.vue')
+  },
+  {
+    path: '/tools/background-transparent',
+    name: 'background-transparent',
+    component: () => import('@/views/BackgroundTransparent.vue')
   }
 ]
 
@@ -39,7 +49,9 @@ export function getStaticRoutes(): string[] {
     '/',
     '/nav/',
     '/posts',
-    '/projects'
+    '/projects',
+    '/tools',
+    '/tools/background-transparent'
   ]
   
   // 添加所有博客文章路由

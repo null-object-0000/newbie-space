@@ -25,6 +25,10 @@
             项目
             <span class="nav-indicator" v-if="$route.path === '/projects'"></span>
           </router-link>
+          <router-link to="/tools" class="nav-item" :class="{ active: $route.path.startsWith('/tools') }">
+            工具
+            <span class="nav-indicator" v-if="$route.path.startsWith('/tools')"></span>
+          </router-link>
         </div>
 
         <div class="nav-actions">
@@ -61,6 +65,9 @@
         </router-link>
         <router-link to="/projects" class="mobile-nav-item" :class="{ active: $route.path === '/projects' }" @click="mobileMenuOpen = false">
           项目
+        </router-link>
+        <router-link to="/tools" class="mobile-nav-item" :class="{ active: $route.path.startsWith('/tools') }" @click="mobileMenuOpen = false">
+          工具
         </router-link>
       </div>
     </Transition>
