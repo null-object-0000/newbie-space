@@ -39,6 +39,11 @@
         </label>
       </section>
 
+      <div v-if="pipelineFrom" class="pipeline-banner">
+        <ArrowRightLeft :size="14" />
+        <span>来自「{{ pipelineFrom }}」的流转图片</span>
+      </div>
+
       <section v-if="originalImage" class="controls-card">
         <div class="control-group">
           <label for="targetColor">目标背景色</label>
@@ -106,6 +111,15 @@
             <RotateCcw :size="16" />
             <span>重新上传</span>
           </button>
+          <button
+            class="pipeline-button"
+            type="button"
+            :disabled="!processedImageData"
+            @click="sendToResize"
+          >
+            <ArrowRightLeft :size="16" />
+            <span>发送到尺寸调整</span>
+          </button>
           <button class="primary-button" type="button" :disabled="!processedImageData" @click="downloadImage">
             <Download :size="18" />
             <span>下载 PNG</span>
@@ -125,6 +139,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useTheme } from '@/composables/useTheme'
 import {
   ArrowLeft,
+  ArrowRightLeft,
   Download,
   ImageOff,
   LoaderCircle,
@@ -137,6 +152,7 @@ import {
   type ProcessStats,
   type TransparentMode
 } from '@/utils/backgroundTransparent'
+import { storePipelineImage, consumePipelineImage } from '@/utils/toolPipeline'
 
 const { isDark } = useTheme()
 
@@ -160,6 +176,66 @@ let objectUrl: string | null = null
 let processTimer: ReturnType<typeof setTimeout> | null = null
 let toastTimer: ReturnType<typeof setTimeout> | null = null
 
+const pipelineFrom = ref('') // 如果从其他工具流转过来，显示来源
+
+async function sendToResize() {
+  if (!processedImageData.value) {
+    showToast('请先处理图片', 'error')
+    return
+  }
+
+  // 将处理后的图片导出为 data URL
+  const canvas = document.createElement('canvas')
+  canvas.width = processedImageData.value.width
+  canvas.height = processedImageData.value.height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) {
+    showToast('当前浏览器不支持', 'error')
+    return
+  }
+  ctx.putImageData(processedImageData.value, 0, 0)
+  const dataUrl = canvas.toDataURL('image/png')
+
+  const ok = storePipelineImage({
+    dataUrl,
+    fileName: originalFileName.value || 'transparent.png',
+    fromTool: '背景透明化',
+    width: processedImageData.value.width,
+    height: processedImageData.value.height
+  })
+
+  if (ok) {
+    showToast('已发送，即将跳转', 'success')
+    setTimeout(() => {
+      window.location.href = '/tools/image-resize'
+    }, 300)
+  } else {
+    showToast('图片过大，无法流转（请下载后重新上传）', 'error')
+  }
+}
+
+async function tryLoadPipelineImage() {
+  const piped = consumePipelineImage()
+  if (!piped) return
+
+  pipelineFrom.value = piped.fromTool
+
+  try {
+    const img = await loadImage(piped.dataUrl)
+    originalImage.value = img
+    originalFileName.value = piped.fileName
+    originalImageData.value = null
+    processedImageData.value = null
+    stats.value = null
+    await nextTick()
+    drawOriginalPreview()
+    processCurrentImage()
+    showToast(`已接收来自「${piped.fromTool}」的图片`, 'success')
+  } catch {
+    showToast('读取流转图片失败', 'error')
+  }
+}
+
 const transparentPercent = computed(() => {
   if (!stats.value || stats.value.totalPixels === 0) return '0.0'
   return ((stats.value.transparentPixels / stats.value.totalPixels) * 100).toFixed(1)
@@ -167,6 +243,7 @@ const transparentPercent = computed(() => {
 
 onMounted(() => {
   window.addEventListener('paste', handlePaste)
+  tryLoadPipelineImage()
 })
 
 onUnmounted(() => {
@@ -634,7 +711,8 @@ function clearTimers() {
 }
 
 .primary-button,
-.secondary-button {
+.secondary-button,
+.pipeline-button {
   min-height: 2.5rem;
   display: inline-flex;
   align-items: center;
@@ -658,13 +736,39 @@ function clearTimers() {
   color: var(--text-primary);
 }
 
+.pipeline-button {
+  background: color-mix(in srgb, #f59e0b 12%, transparent);
+  color: #b45309;
+  border: 1px solid color-mix(in srgb, #f59e0b 30%, transparent);
+}
+
+.pipeline-button:hover {
+  background: color-mix(in srgb, #f59e0b 20%, transparent);
+}
+
+.pipeline-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  margin-bottom: 1rem;
+  border-radius: 0.625rem;
+  background: color-mix(in srgb, #f59e0b 10%, transparent);
+  border: 1px solid color-mix(in srgb, #f59e0b 25%, transparent);
+  color: #b45309;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
 .primary-button:hover,
-.secondary-button:hover {
+.secondary-button:hover,
+.pipeline-button:hover {
   transform: translateY(-1px);
 }
 
 .primary-button:disabled,
-.secondary-button:disabled {
+.secondary-button:disabled,
+.pipeline-button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
   transform: none;

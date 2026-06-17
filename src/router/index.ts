@@ -40,6 +40,11 @@ export const routes: RouteRecordRaw[] = [
     path: '/tools/background-transparent',
     name: 'background-transparent',
     component: () => import('@/views/BackgroundTransparent.vue')
+  },
+  {
+    path: '/tools/image-resize',
+    name: 'image-resize',
+    component: () => import('@/views/ImageResize.vue')
   }
 ]
 
@@ -51,7 +56,8 @@ export function getStaticRoutes(): string[] {
     '/posts',
     '/projects',
     '/tools',
-    '/tools/background-transparent'
+    '/tools/background-transparent',
+    '/tools/image-resize'
   ]
   
   // 添加所有博客文章路由

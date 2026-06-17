@@ -44,21 +44,7 @@
           </a>
         </div>
 
-        <!-- 自有工具卡片 -->
-        <div class="card card-tools" @click="router.push('/tools')">
-          <div class="tools-badge">
-            <WandSparkles :size="14" />
-            <span>自有工具</span>
-          </div>
-          <h3 class="tools-title">本地工具箱</h3>
-          <p class="tools-desc">图片处理、格式转换等轻量工具，优先在浏览器本地完成。</p>
-          <div class="tools-footer">
-            <span>已上线 {{ tools.length }} 个</span>
-            <ArrowRight :size="16" />
-          </div>
-        </div>
-
-        <!-- 第二行: 开源项目卡片 (1列) + 常用导航卡片 (2列) -->
+<!-- 第二行: 开源项目卡片 (1列) + 常用导航卡片 (2列) -->
 
         <!-- 开源项目卡片 -->
         <div @click="goToProject(featuredProject)" class="card card-project" v-if="featuredProject">
@@ -115,11 +101,10 @@ import { useTheme } from '@/composables/useTheme'
 import { useProjects } from '@/composables/useProjects'
 import { getAllPosts } from '@/data/posts'
 import { Project } from '@/data/projects'
-import { tools } from '@/data/tools'
 import navData from '@/data/nav-data.json'
 import {
   PenTool, User, Compass,
-  Box, Star, WandSparkles, ArrowRight
+  Box, Star, ArrowRight
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -682,70 +667,6 @@ const getTechColor = (tech: string) => {
   border: none !important;
 }
 
-/* ========== 自有工具卡片 ========== */
-.card-tools {
-  display: flex;
-  flex-direction: column;
-  min-height: 11rem;
-}
-
-.card-tools:hover {
-  transform: translateY(-4px);
-}
-
-.tools-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #10b981;
-  font-size: 0.625rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.75rem;
-}
-
-@media (min-width: 640px) {
-  .tools-badge {
-    font-size: 0.75rem;
-    margin-bottom: 1rem;
-  }
-}
-
-.tools-title {
-  font-size: 1.125rem;
-  font-weight: 700;
-  margin: 0 0 0.5rem;
-}
-
-@media (min-width: 640px) {
-  .tools-title {
-    font-size: 1.25rem;
-  }
-}
-
-.tools-desc {
-  color: var(--text-muted);
-  line-height: 1.5;
-  margin: 0;
-  font-size: 0.8125rem;
-  flex: 1;
-}
-
-@media (min-width: 640px) {
-  .tools-desc {
-    font-size: 0.875rem;
-  }
-}
-
-.tools-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  margin-top: 1rem;
-}
 
 .about-avatar {
   width: 2.25rem;

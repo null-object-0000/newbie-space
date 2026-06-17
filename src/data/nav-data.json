@@ -1,5 +1,30 @@
 [
   {
+    "name": "自有工具",
+    "title": "Self Tools",
+    "icon": "wand-sparkles",
+    "links": [
+      {
+        "name": "本地工具箱",
+        "icon": "wand-sparkles",
+        "link": "/tools",
+        "desc": "图片处理、格式转换等轻量工具，优先在浏览器本地完成。"
+      },
+      {
+        "name": "背景透明化",
+        "icon": "image-off",
+        "link": "/tools/background-transparent",
+        "desc": "将白色或指定颜色背景转换为透明 PNG，支持仅背景和全局替换两种模式。"
+      },
+      {
+        "name": "图片尺寸调整",
+        "icon": "crop",
+        "link": "/tools/image-resize",
+        "desc": "自由调整图片宽度和高度，支持锁定宽高比、百分比缩放，输出 PNG / JPEG / WebP。"
+      }
+    ]
+  },
+  {
     "name": "常用工具",
     "title": "Tools",
     "icon": "wrench",
