@@ -1,5 +1,5 @@
 import type { Component } from 'vue'
-import { Crop, Fingerprint, ImageOff, Link2, QrCode, ScanLine, Shuffle } from 'lucide-vue-next'
+import { BarChart3, Clock, Container, Crop, Fingerprint, GitCompare, ImageOff, Link2, Network, Palette, QrCode, ScanLine, Shuffle } from 'lucide-vue-next'
 
 /** 工具间流转的数据类型 */
 export type DataType = 'text' | 'image'
@@ -87,5 +87,65 @@ export const tools: ToolItem[] = [
     tags: ['图片处理', 'Canvas', '本地运行'],
     inputType: ['image'],
     outputType: 'image'
+  },
+  {
+    id: 'date-converter',
+    name: '时间戳转换',
+    desc: '日期字符串与 Unix 时间戳互转，支持 ISO 8601 / 本地时间 / UTC / 相对时间等格式，自动识别输入。',
+    path: '/tools/date-converter',
+    icon: Clock,
+    tags: ['文本处理', '本地运行'],
+    inputType: ['text'],
+    outputType: 'text'
+  },
+  {
+    id: 'color-converter',
+    name: '颜色转换',
+    desc: '输入任意格式颜色值，自动转换为 HEX / RGB / HSL / HSV / LCH / CMYK 等 10 种格式。',
+    path: '/tools/color-converter',
+    icon: Palette,
+    tags: ['文本处理', '本地运行'],
+    inputType: ['text'],
+    outputType: 'text'
+  },
+  {
+    id: 'random-port',
+    name: '随机端口生成',
+    desc: '在合法端口范围内随机生成端口号，支持按范围筛选（非特权、注册、动态、自定义）。',
+    path: '/tools/random-port',
+    icon: Network,
+    tags: ['生成器', '本地运行'],
+    inputType: [],
+    outputType: 'text'
+  },
+  {
+    id: 'text-statistics',
+    name: '文本统计',
+    desc: '统计文本的字符数、单词数、行数、段落数、句子数和字节大小，纯本地处理。',
+    path: '/tools/text-statistics',
+    icon: BarChart3,
+    tags: ['文本处理', '本地运行'],
+    inputType: ['text'],
+    outputType: 'text'
+  },
+  {
+    id: 'text-diff',
+    name: '文本差异对比',
+    desc: '对比两段文本的差异，高亮显示新增和删除的行，纯本地处理。',
+    path: '/tools/text-diff',
+    icon: GitCompare,
+    tags: ['文本处理', '本地运行'],
+    inputType: ['text'],
+    outputType: 'text'
+  },
+  {
+    id: 'docker-compose',
+    name: 'Docker Run 转换',
+    desc: '将 docker run 命令转换为 docker-compose.yml 格式，支持常用参数解析。',
+    path: '/tools/docker-compose',
+    icon: Container,
+    tags: ['文本处理', '本地运行'],
+    inputType: ['text'],
+    outputType: 'text'
   }
 ]

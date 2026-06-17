@@ -70,6 +70,36 @@ export const routes: RouteRecordRaw[] = [
     path: '/tools/format-convert',
     name: 'format-convert',
     component: () => import('@/views/FormatConvert.vue')
+  },
+  {
+    path: '/tools/color-converter',
+    name: 'color-converter',
+    component: () => import('@/views/ColorConverter.vue')
+  },
+  {
+    path: '/tools/random-port',
+    name: 'random-port',
+    component: () => import('@/views/RandomPort.vue')
+  },
+  {
+    path: '/tools/date-converter',
+    name: 'date-converter',
+    component: () => import('@/views/DateConverter.vue')
+  },
+  {
+    path: '/tools/text-statistics',
+    name: 'text-statistics',
+    component: () => import('@/views/TextStatistics.vue')
+  },
+  {
+    path: '/tools/text-diff',
+    name: 'text-diff',
+    component: () => import('@/views/TextDiff.vue')
+  },
+  {
+    path: '/tools/docker-compose',
+    name: 'docker-compose',
+    component: () => import('@/views/DockerCompose.vue')
   }
 ]
 
@@ -87,7 +117,13 @@ export function getStaticRoutes(): string[] {
     '/tools/qrcode-decode',
     '/tools/url-encoder',
     '/tools/hash-text',
-    '/tools/format-convert'
+    '/tools/format-convert',
+    '/tools/color-converter',
+    '/tools/random-port',
+    '/tools/date-converter',
+    '/tools/text-statistics',
+    '/tools/text-diff',
+    '/tools/docker-compose'
   ]
   
   // 添加所有博客文章路由

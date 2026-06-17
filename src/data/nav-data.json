@@ -51,6 +51,42 @@
         "icon": "shuffle",
         "link": "/tools/format-convert",
         "desc": "将图片转换为 PNG / JPEG / WebP 格式，不改变尺寸，纯本地处理。"
+      },
+      {
+        "name": "颜色转换",
+        "icon": "palette",
+        "link": "/tools/color-converter",
+        "desc": "输入任意格式颜色值，自动转换为 HEX / RGB / HSL / HSV / LCH / CMYK 等 10 种格式。"
+      },
+      {
+        "name": "随机端口生成",
+        "icon": "network",
+        "link": "/tools/random-port",
+        "desc": "在合法端口范围内随机生成端口号，支持按范围筛选（非特权、注册、动态、自定义）。"
+      },
+      {
+        "name": "时间戳转换",
+        "icon": "clock",
+        "link": "/tools/date-converter",
+        "desc": "日期字符串与 Unix 时间戳互转，支持 ISO 8601 / 本地时间 / UTC / 相对时间等格式，自动识别输入。"
+      },
+      {
+        "name": "文本统计",
+        "icon": "bar-chart-3",
+        "link": "/tools/text-statistics",
+        "desc": "统计文本的字符数、单词数、行数、段落数、句子数和字节大小，纯本地处理。"
+      },
+      {
+        "name": "文本差异对比",
+        "icon": "git-compare",
+        "link": "/tools/text-diff",
+        "desc": "对比两段文本的差异，高亮显示新增和删除的行，纯本地处理。"
+      },
+      {
+        "name": "Docker Run 转换",
+        "icon": "container",
+        "link": "/tools/docker-compose",
+        "desc": "将 docker run 命令转换为 docker-compose.yml 格式，支持常用参数解析。"
       }
     ]
   },
