@@ -15,6 +15,8 @@ export interface ToolItem {
   inputType: DataType[]
   /** 该工具产生的输出类型 */
   outputType: DataType
+  /** 图标颜色 */
+  color?: string
 }
 
 export const tools: ToolItem[] = [
@@ -26,7 +28,8 @@ export const tools: ToolItem[] = [
     icon: ImageOff,
     tags: ['图片处理', 'Canvas', '本地运行'],
     inputType: ['image'],
-    outputType: 'image'
+    outputType: 'image',
+    color: '#10b981'
   },
   {
     id: 'image-resize',
@@ -36,7 +39,8 @@ export const tools: ToolItem[] = [
     icon: Crop,
     tags: ['图片处理', 'Canvas', '本地运行'],
     inputType: ['image'],
-    outputType: 'image'
+    outputType: 'image',
+    color: '#10b981'
   },
   {
     id: 'qrcode-gen',
@@ -46,7 +50,8 @@ export const tools: ToolItem[] = [
     icon: QrCode,
     tags: ['生成器', 'Canvas', '本地运行'],
     inputType: ['text'],
-    outputType: 'image'
+    outputType: 'image',
+    color: '#8b5cf6'
   },
   {
     id: 'url-encoder',
@@ -56,7 +61,8 @@ export const tools: ToolItem[] = [
     icon: Link2,
     tags: ['文本处理', '本地运行'],
     inputType: ['text'],
-    outputType: 'text'
+    outputType: 'text',
+    color: '#3b82f6'
   },
   {
     id: 'qrcode-decode',
@@ -66,7 +72,8 @@ export const tools: ToolItem[] = [
     icon: ScanLine,
     tags: ['图片处理', 'Canvas', '本地运行'],
     inputType: ['image'],
-    outputType: 'text'
+    outputType: 'text',
+    color: '#10b981'
   },
   {
     id: 'hash-text',
@@ -76,7 +83,8 @@ export const tools: ToolItem[] = [
     icon: Fingerprint,
     tags: ['文本处理', '本地运行', '加密'],
     inputType: ['text'],
-    outputType: 'text'
+    outputType: 'text',
+    color: '#ef4444'
   },
   {
     id: 'format-convert',
@@ -86,7 +94,8 @@ export const tools: ToolItem[] = [
     icon: Shuffle,
     tags: ['图片处理', 'Canvas', '本地运行'],
     inputType: ['image'],
-    outputType: 'image'
+    outputType: 'image',
+    color: '#10b981'
   },
   {
     id: 'date-converter',
@@ -96,7 +105,8 @@ export const tools: ToolItem[] = [
     icon: Clock,
     tags: ['文本处理', '本地运行'],
     inputType: ['text'],
-    outputType: 'text'
+    outputType: 'text',
+    color: '#3b82f6'
   },
   {
     id: 'color-converter',
@@ -106,7 +116,8 @@ export const tools: ToolItem[] = [
     icon: Palette,
     tags: ['文本处理', '本地运行'],
     inputType: ['text'],
-    outputType: 'text'
+    outputType: 'text',
+    color: '#3b82f6'
   },
   {
     id: 'random-port',
@@ -116,7 +127,8 @@ export const tools: ToolItem[] = [
     icon: Network,
     tags: ['生成器', '本地运行'],
     inputType: [],
-    outputType: 'text'
+    outputType: 'text',
+    color: '#8b5cf6'
   },
   {
     id: 'text-statistics',
@@ -126,7 +138,8 @@ export const tools: ToolItem[] = [
     icon: BarChart3,
     tags: ['文本处理', '本地运行'],
     inputType: ['text'],
-    outputType: 'text'
+    outputType: 'text',
+    color: '#3b82f6'
   },
   {
     id: 'text-diff',
@@ -136,7 +149,8 @@ export const tools: ToolItem[] = [
     icon: GitCompare,
     tags: ['文本处理', '本地运行'],
     inputType: ['text'],
-    outputType: 'text'
+    outputType: 'text',
+    color: '#3b82f6'
   },
   {
     id: 'docker-compose',
@@ -146,6 +160,7 @@ export const tools: ToolItem[] = [
     icon: Container,
     tags: ['文本处理', '本地运行'],
     inputType: ['text'],
-    outputType: 'text'
+    outputType: 'text',
+    color: '#3b82f6'
   }
 ]

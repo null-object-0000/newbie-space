@@ -55,7 +55,7 @@
       </div>
 
       <!-- Diff 结果 -->
-      <div class="diff-panel" v-if="diff.length">
+      <div class="diff-panel" v-if="pairedDiff.length">
         <div class="diff-head">
           <span class="section-label">差异对比</span>
           <span class="diff-stats" v-if="stats.added || stats.removed">
@@ -66,22 +66,42 @@
             <button class="btn secondary" @click="copyDiff">复制差异</button>
             <PipelineSend
               :tools="downstreamTools"
-              :disabled="!diff.length"
+              :disabled="!pairedDiff.length"
               @send="handlePipelineSend"
             />
           </div>
         </div>
 
-        <div class="diff-lines">
-          <div
-            v-for="(line, idx) in diff"
-            :key="idx"
-            class="diff-line"
-            :class="line.type"
-          >
-            <span class="line-num">{{ lineNumLabel(line) }}</span>
-            <span class="line-prefix">{{ prefixMap[line.type] }}</span>
-            <code class="line-content">{{ line.content || ' ' }}</code>
+        <div class="diff-table">
+          <div class="diff-row" v-for="(pair, idx) in pairedDiff" :key="idx">
+            <!-- 左侧 -->
+            <div class="diff-cell" :class="pair.leftType">
+              <span class="line-num">{{ pair.leftNum ?? '' }}</span>
+              <div class="cell-content">
+                <template v-if="pair.charDiff && pair.leftType === 'delete'">
+                  <span
+                    v-for="(chunk, ci) in pair.charDiff.left"
+                    :key="ci"
+                    :class="{ 'char-highlight': chunk.type === 'removed' }"
+                  >{{ chunk.text }}</span>
+                </template>
+                <template v-else>{{ pair.leftContent || ' ' }}</template>
+              </div>
+            </div>
+            <!-- 右侧 -->
+            <div class="diff-cell" :class="pair.rightType">
+              <span class="line-num">{{ pair.rightNum ?? '' }}</span>
+              <div class="cell-content">
+                <template v-if="pair.charDiff && pair.rightType === 'insert'">
+                  <span
+                    v-for="(chunk, ci) in pair.charDiff.right"
+                    :key="ci"
+                    :class="{ 'char-highlight': chunk.type === 'added' }"
+                  >{{ chunk.text }}</span>
+                </template>
+                <template v-else>{{ pair.rightContent || ' ' }}</template>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -99,13 +119,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { useTheme } from '@/composables/useTheme'
 import { usePipeline, type PipelineIncoming } from '@/composables/usePipeline'
 import type { ToolItem } from '@/data/tools'
 import PipelineSend from '@/components/tools/PipelineSend.vue'
 import { findTool } from '@/utils/toolPipeline'
-import { diffLines, diffStats, type DiffLine } from '@/utils/textDiff'
+import { diffLines, diffStats, pairDiffLines } from '@/utils/textDiff'
 import { ArrowLeft, ArrowRightLeft, Copy, GitCompare, X } from 'lucide-vue-next'
 
 const tool = findTool('text-diff')
@@ -116,7 +136,6 @@ const { pipelineFrom, downstreamTools, sendTextTo } = usePipeline({
   toolId: 'text-diff',
   async onIncoming(incoming: PipelineIncoming) {
     if (incoming.type === 'text') {
-      // 先填 A，再填 B 则交换
       if (!textA.value) { textA.value = incoming.data.text }
       else { textB.value = incoming.data.text }
       scheduleDiff()
@@ -136,20 +155,22 @@ function handlePipelineSend(target: ToolItem) {
 // --- 状态 ---
 const textA = ref('')
 const textB = ref('')
-const diff = ref<DiffLine[]>([])
+const rawDiff = ref<ReturnType<typeof diffLines>>([])
 const toastMessage = ref('')
 const toastType = ref<'success' | 'error'>('success')
 
 let diffTimer: ReturnType<typeof setTimeout> | null = null
 let toastTimer: ReturnType<typeof setTimeout> | null = null
 
-const prefixMap: Record<string, string> = { equal: ' ', insert: '+', delete: '-' }
-
-const stats = computed(() => diffStats(diff.value))
+const stats = computed(() => diffStats(rawDiff.value))
+const pairedDiff = computed(() => pairDiffLines(rawDiff.value))
 
 const diffSummary = computed(() => {
-  if (!diff.value.length) return ''
-  return diff.value.map(l => `${prefixMap[l.type]} ${l.content}`).join('\n')
+  if (!rawDiff.value.length) return ''
+  return rawDiff.value.map(l => {
+    const prefix = l.type === 'equal' ? ' ' : l.type === 'insert' ? '+' : '-'
+    return `${prefix} ${l.content}`
+  }).join('\n')
 })
 
 // --- Diff ---
@@ -160,17 +181,10 @@ function scheduleDiff() {
 
 function doDiff() {
   if (!textA.value.trim() || !textB.value.trim()) {
-    diff.value = []
+    rawDiff.value = []
     return
   }
-  diff.value = diffLines(textA.value, textB.value)
-}
-
-// --- 行号 ---
-function lineNumLabel(line: DiffLine): string {
-  if (line.type === 'delete') return String(line.lineNumA ?? '')
-  if (line.type === 'insert') return String(line.lineNumB ?? '')
-  return `${line.lineNumA ?? ''} → ${line.lineNumB ?? ''}`
+  rawDiff.value = diffLines(textA.value, textB.value)
 }
 
 // --- 操作 ---
@@ -180,8 +194,8 @@ async function pasteA() {
 async function pasteB() {
   try { textB.value = await navigator.clipboard.readText(); scheduleDiff() } catch {}
 }
-function clearA() { textA.value = ''; diff.value = [] }
-function clearB() { textB.value = ''; diff.value = [] }
+function clearA() { textA.value = ''; rawDiff.value = [] }
+function clearB() { textB.value = ''; rawDiff.value = [] }
 
 async function copyDiff() {
   try {
@@ -204,7 +218,7 @@ onUnmounted(() => {
 
 <style scoped>
 .tool-page { min-height: 100vh; background: var(--bg-main); color: var(--text-primary); }
-.tool-main { width: 100%; max-width: 72rem; margin: 0 auto; padding: 5rem 1rem 2.5rem; }
+.tool-main { width: 100%; max-width: 80rem; margin: 0 auto; padding: 5rem 1rem 2.5rem; }
 @media (min-width: 640px) { .tool-main { padding: 5.5rem 1.5rem 3rem; } }
 @media (min-width: 1024px) { .tool-main { padding: 5.5rem 2rem 3rem; } }
 
@@ -261,11 +275,12 @@ onUnmounted(() => {
 }
 
 .tiny-btn {
-  width: 1.625rem; height: 1.625rem;
+  min-width: 2.5rem; height: 1.75rem;
   display: flex; align-items: center; justify-content: center;
+  padding: 0 0.5rem;
   border: 1px solid var(--border-color); border-radius: 0.25rem;
   background: var(--bg-elevated); color: var(--text-secondary);
-  cursor: pointer; font-size: 0.625rem;
+  cursor: pointer; font-size: 0.6875rem; font-weight: 600;
   transition: border-color 0.15s, color 0.15s;
 }
 .tiny-btn:hover { border-color: var(--brand-500); color: var(--brand-500); }
@@ -299,35 +314,50 @@ textarea:focus { border-color: var(--brand-500); }
   margin-left: auto; display: flex; align-items: center; gap: 0.5rem;
 }
 
-.diff-lines {
+.diff-table {
   max-height: 500px; overflow-y: auto;
+  font-family: var(--font-family-mono, monospace);
+  font-size: 0.75rem;
 }
 
-.diff-line {
-  display: flex; align-items: baseline; gap: 0.5rem;
-  padding: 0.125rem 0.75rem;
-  font-family: var(--font-family-mono, monospace);
-  font-size: 0.75rem; line-height: 1.6;
+.diff-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   border-bottom: 1px solid color-mix(in srgb, var(--border-color) 50%, transparent);
 }
-.diff-line.insert { background: color-mix(in srgb, #16a34a 10%, transparent); }
-.diff-line.delete { background: color-mix(in srgb, #dc2626 10%, transparent); }
+
+.diff-cell {
+  display: flex; align-items: flex-start; gap: 0.5rem;
+  padding: 0.25rem 0.625rem;
+  min-height: 1.5rem;
+}
+
+.diff-cell.delete { background: color-mix(in srgb, #dc2626 8%, transparent); }
+.diff-cell.insert { background: color-mix(in srgb, #16a34a 8%, transparent); }
 
 .line-num {
-  width: 3.5rem; flex-shrink: 0;
+  width: 2.5rem; flex-shrink: 0;
   text-align: right; color: var(--text-muted);
-  font-size: 0.6875rem;
+  font-size: 0.625rem; padding-top: 0.125rem;
+  user-select: none;
 }
 
-.line-prefix {
-  width: 1rem; flex-shrink: 0; text-align: center;
-  font-weight: 700;
+.cell-content {
+  flex: 1; line-height: 1.6; white-space: pre-wrap; word-break: break-all;
+  color: var(--text-primary);
 }
-.diff-line.insert .line-prefix { color: #16a34a; }
-.diff-line.delete .line-prefix { color: #dc2626; }
 
-.line-content {
-  flex: 1; white-space: pre-wrap; word-break: break-all;
+.char-highlight {
+  background: color-mix(in srgb, #f59e0b 30%, transparent);
+  border-radius: 0.125rem;
+  padding: 0 0.125rem;
+}
+
+.diff-cell.delete .char-highlight {
+  background: color-mix(in srgb, #dc2626 20%, transparent);
+}
+.diff-cell.insert .char-highlight {
+  background: color-mix(in srgb, #16a34a 20%, transparent);
 }
 
 .diff-empty {

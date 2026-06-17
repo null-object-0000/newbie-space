@@ -73,7 +73,7 @@
         <div class="tools-grid">
           <router-link v-for="tool in group.tools" :key="tool.id" class="tool-card" :to="tool.path">
             <div class="card-head">
-              <div class="tool-icon">
+              <div class="tool-icon" :style="iconStyle(tool.color)">
                 <component :is="tool.icon" :size="18" />
               </div>
               <h2>{{ tool.name }}</h2>
@@ -147,6 +147,16 @@ function clearFilters() {
 function typeLabel(types: DataType | DataType[]): string {
   const arr = Array.isArray(types) ? types : [types]
   return arr.map(t => t === 'text' ? '文本' : '图片').join('、')
+}
+
+const DEFAULT_ICON_COLOR = '#10b981'
+
+function iconStyle(color?: string) {
+  const c = color || DEFAULT_ICON_COLOR
+  return {
+    color: c,
+    background: `color-mix(in srgb, ${c} 14%, transparent)`
+  }
 }
 </script>
 
@@ -315,8 +325,6 @@ function typeLabel(types: DataType | DataType[]): string {
   width: 1.75rem; height: 1.75rem; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   border-radius: 0.4375rem;
-  color: #10b981;
-  background: color-mix(in srgb, #10b981 14%, transparent);
 }
 .card-head h2 {
   font-size: 0.875rem; margin: 0;
