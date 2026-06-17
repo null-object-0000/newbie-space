@@ -13,14 +13,13 @@
       <section class="tool-header">
         <div class="tool-heading">
           <div class="heading-icon">
-            <ImageOff :size="26" />
+            <ImageOff :size="22" />
           </div>
           <div>
-            <p class="tool-kicker">Image Tool</p>
-            <h1>背景透明化</h1>
+            <h1>{{ tool?.name }}</h1>
+            <p>{{ tool?.desc }}</p>
           </div>
         </div>
-        <p>将白色或指定颜色背景转换为透明 PNG。图片只在浏览器本地处理，不会上传。</p>
       </section>
 
       <section class="upload-card">
@@ -70,9 +69,9 @@
           </div>
         </div>
 
-        <button class="primary-button" type="button" :disabled="isProcessing" @click="processCurrentImage">
-          <LoaderCircle v-if="isProcessing" :size="18" class="spin-icon" />
-          <Sparkles v-else :size="18" />
+        <button class="btn primary" type="button" :disabled="isProcessing" @click="processCurrentImage">
+          <LoaderCircle v-if="isProcessing" :size="16" class="spin-icon" />
+          <Sparkles v-else :size="16" />
           <span>{{ isProcessing ? '处理中' : '处理图片' }}</span>
         </button>
       </section>
@@ -107,21 +106,13 @@
           <span v-if="stats">{{ transparentPercent }}%</span>
         </div>
         <div class="action-buttons">
-          <button class="secondary-button" type="button" @click="resetAll">
-            <RotateCcw :size="16" />
-            <span>重新上传</span>
-          </button>
-          <button
-            class="pipeline-button"
-            type="button"
+          <PipelineSend
+            :tools="downstreamTools"
             :disabled="!processedImageData"
-            @click="sendToResize"
-          >
-            <ArrowRightLeft :size="16" />
-            <span>发送到尺寸调整</span>
-          </button>
-          <button class="primary-button" type="button" :disabled="!processedImageData" @click="downloadImage">
-            <Download :size="18" />
+            @send="sendToTool"
+          />
+          <button class="btn primary" type="button" :disabled="!processedImageData" @click="downloadImage">
+            <Download :size="16" />
             <span>下载 PNG</span>
           </button>
         </div>
@@ -143,7 +134,6 @@ import {
   Download,
   ImageOff,
   LoaderCircle,
-  RotateCcw,
   Sparkles,
   UploadCloud
 } from 'lucide-vue-next'
@@ -152,8 +142,11 @@ import {
   type ProcessStats,
   type TransparentMode
 } from '@/utils/backgroundTransparent'
-import { storePipelineImage, consumePipelineImage } from '@/utils/toolPipeline'
+import { usePipeline } from '@/composables/usePipeline'
+import PipelineSend from '@/components/tools/PipelineSend.vue'
+import { findTool } from '@/utils/toolPipeline'
 
+const tool = findTool('background-transparent')
 const { isDark } = useTheme()
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
@@ -176,64 +169,55 @@ let objectUrl: string | null = null
 let processTimer: ReturnType<typeof setTimeout> | null = null
 let toastTimer: ReturnType<typeof setTimeout> | null = null
 
-const pipelineFrom = ref('') // 如果从其他工具流转过来，显示来源
-
-async function sendToResize() {
-  if (!processedImageData.value) {
-    showToast('请先处理图片', 'error')
-    return
+// --- 流转 ---
+const { pipelineFrom, downstreamTools, sendImageTo } = usePipeline({
+  toolId: 'background-transparent',
+  onIncoming: async (incoming) => {
+    if (incoming.type !== 'image') return false
+    try {
+      const img = await loadImage(incoming.data.dataUrl)
+      originalImage.value = img
+      originalFileName.value = incoming.data.fileName
+      originalImageData.value = null
+      processedImageData.value = null
+      stats.value = null
+      await nextTick()
+      drawOriginalPreview()
+      processCurrentImage()
+      showToast(`已接收来自「${incoming.data.fromTool}」的图片`, 'success')
+      return true
+    } catch {
+      showToast('读取流转图片失败', 'error')
+      return false
+    }
   }
+})
 
-  // 将处理后的图片导出为 data URL
+function getPipelineImagePayload() {
+  if (!processedImageData.value) return null
   const canvas = document.createElement('canvas')
   canvas.width = processedImageData.value.width
   canvas.height = processedImageData.value.height
   const ctx = canvas.getContext('2d')
-  if (!ctx) {
-    showToast('当前浏览器不支持', 'error')
-    return
-  }
+  if (!ctx) return null
   ctx.putImageData(processedImageData.value, 0, 0)
   const dataUrl = canvas.toDataURL('image/png')
-
-  const ok = storePipelineImage({
+  return {
     dataUrl,
     fileName: originalFileName.value || 'transparent.png',
-    fromTool: '背景透明化',
     width: processedImageData.value.width,
     height: processedImageData.value.height
-  })
-
-  if (ok) {
-    showToast('已发送，即将跳转', 'success')
-    setTimeout(() => {
-      window.location.href = '/tools/image-resize'
-    }, 300)
-  } else {
-    showToast('图片过大，无法流转（请下载后重新上传）', 'error')
   }
 }
 
-async function tryLoadPipelineImage() {
-  const piped = consumePipelineImage()
-  if (!piped) return
-
-  pipelineFrom.value = piped.fromTool
-
-  try {
-    const img = await loadImage(piped.dataUrl)
-    originalImage.value = img
-    originalFileName.value = piped.fileName
-    originalImageData.value = null
-    processedImageData.value = null
-    stats.value = null
-    await nextTick()
-    drawOriginalPreview()
-    processCurrentImage()
-    showToast(`已接收来自「${piped.fromTool}」的图片`, 'success')
-  } catch {
-    showToast('读取流转图片失败', 'error')
+function sendToTool(target: typeof downstreamTools.value[number]) {
+  const payload = getPipelineImagePayload()
+  if (!payload) {
+    showToast('请先处理图片', 'error')
+    return
   }
+  const result = sendImageTo(target, payload)
+  showToast(result.message, result.ok ? 'success' : 'error')
 }
 
 const transparentPercent = computed(() => {
@@ -243,7 +227,6 @@ const transparentPercent = computed(() => {
 
 onMounted(() => {
   window.addEventListener('paste', handlePaste)
-  tryLoadPipelineImage()
 })
 
 onUnmounted(() => {
@@ -506,326 +489,169 @@ function clearTimers() {
   width: 100%;
   max-width: 72rem;
   margin: 0 auto;
-  padding: 5.5rem 1rem 4rem;
+  padding: 5rem 1rem 2.5rem;
 }
+@media (min-width: 640px) { .tool-main { padding: 5.5rem 1.5rem 3rem; } }
+@media (min-width: 1024px) { .tool-main { padding: 5.5rem 2rem 3rem; } }
 
-@media (min-width: 640px) {
-  .tool-main {
-    padding: 6rem 1.5rem 4rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .tool-main {
-    padding-left: 2rem;
-    padding-right: 2rem;
-  }
-}
-
-.tool-topbar {
-  margin-bottom: 1rem;
-}
-
+.tool-topbar { margin-bottom: 0.75rem; }
 .back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
+  display: inline-flex; align-items: center; gap: 0.375rem;
+  color: var(--text-secondary); font-size: 0.8125rem;
 }
+.back-link:hover { color: var(--brand-500); }
 
-.back-link:hover {
-  color: var(--brand-500);
-}
-
-.tool-header {
-  display: flex;
-  flex-direction: column;
-  gap: 0.875rem;
-  margin-bottom: 1.5rem;
-}
-
+.tool-header { margin-bottom: 1.25rem; }
 .tool-heading {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+  display: flex; align-items: center; gap: 0.75rem;
 }
-
 .heading-icon {
-  width: 3.25rem;
-  height: 3.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0.875rem;
+  width: 2.75rem; height: 2.75rem;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 0.5rem;
   color: #10b981;
   background: color-mix(in srgb, #10b981 14%, transparent);
 }
-
 .tool-kicker {
-  color: var(--brand-500);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin-bottom: 0.25rem;
+  color: var(--brand-500); font-size: 0.6875rem; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.125rem;
 }
-
-.tool-header h1 {
-  font-size: 2rem;
-  line-height: 1.1;
-  margin: 0;
-}
-
+.tool-header h1 { font-size: 1.375rem; line-height: 1.1; margin: 0; }
 .tool-header p {
-  max-width: 42rem;
-  color: var(--text-secondary);
-  margin: 0;
+  color: var(--text-secondary); font-size: 0.8125rem; margin: 0.25rem 0 0; max-width: 36rem;
 }
 
+/* ====== 卡片 ====== */
 .upload-card,
 .controls-card,
 .action-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
-  border-radius: 1rem;
-  padding: 1rem;
-  margin-bottom: 1rem;
+  border-radius: 0.5rem;
+  padding: 0.875rem;
+  margin-bottom: 0.75rem;
 }
 
+/* --- 上传区 --- */
 .upload-zone {
-  min-height: 12rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  padding: 2rem 1rem;
-  border: 2px dashed color-mix(in srgb, var(--text-secondary) 45%, transparent);
-  border-radius: 0.875rem;
+  min-height: 8rem;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 0.5rem; padding: 1.5rem 1rem;
+  border: 2px dashed color-mix(in srgb, var(--text-secondary) 40%, transparent);
+  border-radius: 0.5rem;
   background: var(--bg-elevated);
   color: var(--text-secondary);
-  text-align: center;
-  cursor: pointer;
-  transition: border-color 0.2s, background 0.2s, color 0.2s;
+  text-align: center; cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
 }
-
-.upload-zone input {
-  display: none;
-}
-
-.upload-zone strong {
-  color: var(--text-primary);
-  font-size: 1rem;
-}
-
-.upload-zone span {
-  font-size: 0.875rem;
-}
-
+.upload-zone input { display: none; }
+.upload-zone strong { color: var(--text-primary); font-size: 0.9375rem; }
+.upload-zone span { font-size: 0.8125rem; }
 .upload-zone.drag-over,
-.upload-zone:hover {
-  border-color: var(--brand-500);
-  color: var(--brand-500);
-}
+.upload-zone:hover { border-color: var(--brand-500); color: var(--brand-500); }
+.upload-zone.has-image { border-style: solid; border-color: #10b981; }
 
-.upload-zone.has-image {
-  border-style: solid;
-  border-color: #10b981;
-}
-
+/* --- 控制区 --- */
 .controls-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1rem;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
   align-items: end;
 }
-
 @media (min-width: 768px) {
-  .controls-card {
-    grid-template-columns: 1fr 2fr 1.5fr auto;
-  }
+  .controls-card { grid-template-columns: 1fr 2fr 1.5fr auto; }
 }
 
-.control-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
+.control-group { display: flex; flex-direction: column; gap: 0.375rem; }
 .control-group label {
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  font-weight: 700;
+  color: var(--text-secondary); font-size: 0.75rem; font-weight: 700;
 }
 
-.color-control {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
+.color-control { display: flex; align-items: center; gap: 0.625rem; }
 .color-control input {
-  width: 2.5rem;
-  height: 2.5rem;
-  padding: 0.125rem;
-  border: 1px solid var(--border-color);
-  border-radius: 0.625rem;
-  background: var(--bg-surface);
-  cursor: pointer;
+  width: 2.25rem; height: 2.25rem; padding: 0.125rem;
+  border: 1px solid var(--border-color); border-radius: 0.5rem;
+  background: var(--bg-surface); cursor: pointer;
 }
-
 .color-control span {
   color: var(--text-secondary);
-  font-family: var(--font-family-mono);
+  font-family: var(--font-family-mono, monospace);
   font-size: 0.8125rem;
 }
 
-.tolerance-control input {
-  width: 100%;
-  accent-color: var(--brand-500);
-}
+.tolerance-control input { width: 100%; accent-color: var(--brand-500); }
 
 .mode-toggle {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  padding: 0.25rem;
-  border-radius: 0.75rem;
-  background: var(--bg-elevated);
+  display: grid; grid-template-columns: 1fr 1fr;
+  padding: 0.25rem; border-radius: 0.5rem; background: var(--bg-elevated);
 }
-
 .mode-toggle button {
-  min-height: 2.25rem;
-  border: 0;
-  border-radius: 0.55rem;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  min-height: 2rem; border: 0; border-radius: 0.375rem;
+  background: transparent; color: var(--text-secondary);
+  font-size: 0.8125rem; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
 }
-
 .mode-toggle button.active {
-  background: var(--bg-surface);
-  color: var(--text-primary);
-  box-shadow: var(--shadow-1);
+  background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--shadow-1);
 }
 
-.primary-button,
-.secondary-button,
-.pipeline-button {
-  min-height: 2.5rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border: 0;
-  border-radius: 0.75rem;
-  padding: 0 1rem;
-  font-weight: 700;
+/* --- 按钮 --- */
+.btn {
+  min-height: 2.25rem;
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 0.375rem; border: 0; border-radius: 0.625rem;
+  padding: 0 0.875rem; font-weight: 700; font-size: 0.8125rem;
   cursor: pointer;
-  transition: transform 0.2s, opacity 0.2s, background 0.2s;
+  transition: transform 0.15s, opacity 0.15s, background 0.15s;
 }
-
-.primary-button {
-  background: var(--brand-500);
-  color: #fff;
-}
-
-.secondary-button {
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-}
-
-.pipeline-button {
-  background: color-mix(in srgb, #f59e0b 12%, transparent);
-  color: #b45309;
-  border: 1px solid color-mix(in srgb, #f59e0b 30%, transparent);
-}
-
-.pipeline-button:hover {
-  background: color-mix(in srgb, #f59e0b 20%, transparent);
-}
+.btn.primary { background: var(--brand-500); color: #fff; }
+.btn:hover { transform: translateY(-1px); }
+.btn:disabled { cursor: not-allowed; opacity: 0.5; transform: none; }
 
 .pipeline-banner {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.875rem;
-  margin-bottom: 1rem;
-  border-radius: 0.625rem;
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.4375rem 0.75rem; margin-bottom: 0.75rem;
+  border-radius: 0.5rem;
   background: color-mix(in srgb, #f59e0b 10%, transparent);
   border: 1px solid color-mix(in srgb, #f59e0b 25%, transparent);
-  color: #b45309;
-  font-size: 0.8125rem;
-  font-weight: 600;
+  color: #b45309; font-size: 0.75rem; font-weight: 600;
 }
 
-.primary-button:hover,
-.secondary-button:hover,
-.pipeline-button:hover {
-  transform: translateY(-1px);
-}
-
-.primary-button:disabled,
-.secondary-button:disabled,
-.pipeline-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-  transform: none;
-}
-
+/* --- 预览区 --- */
 .preview-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1rem;
-  margin-bottom: 1rem;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
 }
-
-@media (min-width: 900px) {
-  .preview-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
+@media (min-width: 900px) { .preview-grid { grid-template-columns: repeat(2, 1fr); } }
 
 .preview-panel {
   overflow: hidden;
   border: 1px solid var(--border-color);
-  border-radius: 1rem;
+  border-radius: 0.5rem;
   background: var(--bg-surface);
 }
-
 .panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.75rem; padding: 0.5rem 0.75rem;
   border-bottom: 1px solid var(--border-color);
-  color: var(--text-primary);
-  font-weight: 700;
+  color: var(--text-primary); font-weight: 700; font-size: 0.8125rem;
 }
-
 .panel-badge {
-  padding: 0.2rem 0.5rem;
-  border-radius: 999px;
-  background: var(--bg-elevated);
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-  font-weight: 600;
+  padding: 0.1875rem 0.4375rem; border-radius: 999px;
+  background: var(--bg-elevated); color: var(--text-secondary);
+  font-size: 0.6875rem; font-weight: 600;
 }
-
 .panel-badge.success {
   color: #047857;
   background: color-mix(in srgb, #10b981 20%, transparent);
 }
 
 .canvas-frame {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative; width: 100%; aspect-ratio: 1 / 1;
+  display: flex; align-items: center; justify-content: center;
   overflow: hidden;
   background-color: #fff;
   background-image:
@@ -834,93 +660,39 @@ function clearTimers() {
   background-position: 0 0, 10px 10px;
   background-size: 20px 20px;
 }
-
-.canvas-frame canvas {
-  max-width: 100%;
-  max-height: 100%;
-}
-
+.canvas-frame canvas { max-width: 100%; max-height: 100%; }
 .empty-preview {
-  position: absolute;
-  color: #8b8b94;
-  font-size: 0.875rem;
+  position: absolute; color: var(--text-secondary); font-size: 0.8125rem;
 }
 
+/* --- 操作区 --- */
 .action-card {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  display: flex; flex-direction: column; gap: 0.75rem;
 }
-
 @media (min-width: 768px) {
-  .action-card {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-  }
+  .action-card { flex-direction: row; align-items: center; justify-content: space-between; }
 }
-
 .stats-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
+  display: flex; flex-wrap: wrap; gap: 0.375rem;
+  color: var(--text-secondary); font-size: 0.75rem;
 }
-
 .stats-bar span {
-  padding: 0.25rem 0.625rem;
-  border-radius: 999px;
-  background: var(--bg-elevated);
+  padding: 0.1875rem 0.5rem; border-radius: 999px; background: var(--bg-elevated);
 }
+.action-buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 
-.action-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-}
+.spin-icon { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-.spin-icon {
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
+/* ====== Toast ====== */
 .toast {
-  position: fixed;
-  left: 50%;
-  bottom: 1.5rem;
-  z-index: 1000;
-  transform: translateX(-50%);
-  padding: 0.75rem 1rem;
-  border-radius: 999px;
-  color: #fff;
-  background: #18181b;
-  box-shadow: var(--shadow-3);
-  font-size: 0.875rem;
-  font-weight: 700;
+  position: fixed; left: 50%; bottom: 1.5rem; z-index: 1000;
+  transform: translateX(-50%); padding: 0.625rem 0.875rem; border-radius: 999px;
+  color: #fff; background: #18181b; box-shadow: var(--shadow-3);
+  font-size: 0.8125rem; font-weight: 700;
 }
-
-.toast.success {
-  background: #10b981;
-}
-
-.toast.error {
-  background: #ef4444;
-}
-
-.toast-enter-active,
-.toast-leave-active {
-  transition: opacity 0.2s, transform 0.2s;
-}
-
-.toast-enter-from,
-.toast-leave-to {
-  opacity: 0;
-  transform: translate(-50%, 0.5rem);
-}
+.toast.success { background: #10b981; }
+.toast.error { background: #ef4444; }
+.toast-enter-active, .toast-leave-active { transition: opacity 0.2s, transform 0.2s; }
+.toast-enter-from, .toast-leave-to { opacity: 0; transform: translate(-50%, 0.5rem); }
 </style>

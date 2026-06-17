@@ -45,6 +45,31 @@ export const routes: RouteRecordRaw[] = [
     path: '/tools/image-resize',
     name: 'image-resize',
     component: () => import('@/views/ImageResize.vue')
+  },
+  {
+    path: '/tools/qrcode-gen',
+    name: 'qrcode-gen',
+    component: () => import('@/views/QRCodeGen.vue')
+  },
+  {
+    path: '/tools/qrcode-decode',
+    name: 'qrcode-decode',
+    component: () => import('@/views/QRCodeDecode.vue')
+  },
+  {
+    path: '/tools/url-encoder',
+    name: 'url-encoder',
+    component: () => import('@/views/UrlEncoder.vue')
+  },
+  {
+    path: '/tools/hash-text',
+    name: 'hash-text',
+    component: () => import('@/views/HashText.vue')
+  },
+  {
+    path: '/tools/format-convert',
+    name: 'format-convert',
+    component: () => import('@/views/FormatConvert.vue')
   }
 ]
 
@@ -57,7 +82,12 @@ export function getStaticRoutes(): string[] {
     '/projects',
     '/tools',
     '/tools/background-transparent',
-    '/tools/image-resize'
+    '/tools/image-resize',
+    '/tools/qrcode-gen',
+    '/tools/qrcode-decode',
+    '/tools/url-encoder',
+    '/tools/hash-text',
+    '/tools/format-convert'
   ]
   
   // 添加所有博客文章路由

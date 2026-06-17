@@ -21,6 +21,36 @@
         "icon": "crop",
         "link": "/tools/image-resize",
         "desc": "自由调整图片宽度和高度，支持锁定宽高比、百分比缩放，输出 PNG / JPEG / WebP。"
+      },
+      {
+        "name": "二维码生成",
+        "icon": "qr-code",
+        "link": "/tools/qrcode-gen",
+        "desc": "输入文字或链接生成二维码，支持自定义颜色、尺寸和纠错等级，纯本地处理。"
+      },
+      {
+        "name": "二维码反解析",
+        "icon": "scan-line",
+        "link": "/tools/qrcode-decode",
+        "desc": "上传二维码图片，解析其中的文字或链接，支持反色识别。"
+      },
+      {
+        "name": "URL 编解码",
+        "icon": "link-2",
+        "link": "/tools/url-encoder",
+        "desc": "对文本进行 URL 编码（encodeURIComponent / encodeURI）或解码，纯本地处理。"
+      },
+      {
+        "name": "文本哈希",
+        "icon": "fingerprint",
+        "link": "/tools/hash-text",
+        "desc": "计算文本的 MD5 / SHA-1 / SHA-224 / SHA-256 / SHA-384 / SHA-512 哈希值，支持 Hex / Base64 / Base64url / Bin 编码。"
+      },
+      {
+        "name": "图片格式转换",
+        "icon": "shuffle",
+        "link": "/tools/format-convert",
+        "desc": "将图片转换为 PNG / JPEG / WebP 格式，不改变尺寸，纯本地处理。"
       }
     ]
   },

@@ -17,8 +17,8 @@
   --c-text-3: rgba(60, 60, 67, 0.56);
   
   /* Text Colors (Semantic naming) */
-  --text-primary: #111827;
-  --text-secondary: #6b7280;
+  --text-primary: #333639;
+  --text-secondary: #767c82;
   --text-muted: #9ca3af;
 
   /* Background Colors */
@@ -49,9 +49,10 @@
   --font-family-mono: 'JetBrains Mono', 'Fira Code', Menlo, Monaco, Consolas, 'Courier New', monospace;
 
   /* Sizes */
-  --radius: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  --radius: 6px;
+  --radius-sm: 4px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
 
   /* Transitions */
   --transition-fast: 0.15s ease;
@@ -102,9 +103,9 @@ html.dark,
   --c-text-3: rgba(235, 235, 245, 0.38);
   
   /* Text Colors (Semantic naming) */
-  --text-primary: #f4f4f5;
-  --text-secondary: #a1a1aa;
-  --text-muted: #71717a;
+  --text-primary: #ffffffd1;
+  --text-secondary: #ffffff80;
+  --text-muted: #ffffff4d;
 
   --c-bg: #1a1a1a;
   --c-bg-soft: #242424;
