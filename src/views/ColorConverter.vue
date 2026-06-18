@@ -15,13 +15,24 @@
       <div class="workspace">
         <div class="panel panel-left">
           <label class="input-label">输入颜色</label>
-          <input
-            v-model="input"
-            type="text"
-            placeholder="#3b82f6 / rgb(59,130,246) / hsl(217,91%,60%) / blue…"
-            class="color-input"
-            @input="scheduleConvert"
-          >
+          <div class="input-row">
+            <input
+              v-model="input"
+              type="text"
+              placeholder="#3b82f6 / rgb(59,130,246) / hsl(217,91%,60%) / blue…"
+              class="color-input"
+              @input="scheduleConvert"
+            >
+            <label class="picker-wrap" title="从调色板选色">
+              <input
+                type="color"
+                :value="hex || '#000000'"
+                class="color-picker"
+                @input="onPickerInput"
+              >
+              <Pipette :size="16" />
+            </label>
+          </div>
           <div class="swatch-row" v-if="hex">
             <div class="swatch" :style="{ background: hex }"></div>
             <span class="swatch-hex">{{ hex }}</span>
@@ -70,7 +81,7 @@ import { useTheme } from '@/composables/useTheme'
 import { usePipeline, type PipelineIncoming } from '@/composables/usePipeline'
 import type { ToolItem } from '@/data/tools'
 import PipelineSend from '@/components/tools/PipelineSend.vue'
-import { ArrowLeft, Palette } from 'lucide-vue-next'
+import { ArrowLeft, Palette, Pipette } from 'lucide-vue-next'
 import { convertColor, type ColorResult } from '@/utils/colorConverter'
 
 const { isDark } = useTheme()
@@ -111,9 +122,15 @@ function pushHistory(v: string) {
 function pickHistory(val: string) { input.value = val; doConvert() }
 
 function scheduleConvert() { if (convertTimer) clearTimeout(convertTimer); convertTimer = setTimeout(doConvert, 200) }
+function onPickerInput(e: Event) {
+  const val = (e.target as HTMLInputElement).value
+  input.value = val
+  doConvert()
+}
 function doConvert() {
-  if (!input.value.trim()) { hex.value = ''; results.value = []; return }
-  const c = convertColor(input.value)
+  const v = input.value.trim()
+  if (!v) { hex.value = ''; results.value = []; return }
+  const c = convertColor(v)
   if (!c) { hex.value = ''; results.value = []; return }
   hex.value = c.hex; results.value = c.results
   pushHistory(c.hex)
@@ -137,28 +154,27 @@ onUnmounted(() => { if (convertTimer) clearTimeout(convertTimer); if (toastTimer
 </script>
 
 <style scoped>
-.tool-page { min-height: 100vh; background: var(--bg-main); color: var(--text-primary); }
-.tool-main { width: 100%; max-width: 72rem; margin: 0 auto; padding: 5rem 1rem 2.5rem; }
-@media (min-width: 640px) { .tool-main { padding: 5.5rem 1.5rem 3rem; } }
-@media (min-width: 1024px) { .tool-main { padding: 5.5rem 2rem 3rem; } }
+.heading-icon { --tool-color: #3b82f6; }
 
-.tool-topbar { margin-bottom: 0.75rem; }
-.back-link { display: inline-flex; align-items: center; gap: 0.375rem; color: var(--text-secondary); font-size: 0.8125rem; }
-.back-link:hover { color: var(--brand-500); }
-
-.tool-header { margin-bottom: 1.25rem; }
-.tool-heading { display: flex; align-items: center; gap: 0.75rem; }
-.heading-icon { width: 2.75rem; height: 2.75rem; display: flex; align-items: center; justify-content: center; border-radius: 0.75rem; color: #ec4899; background: color-mix(in srgb, #ec4899 14%, transparent); }
-.tool-heading h1 { font-size: 1.375rem; margin: 0; line-height: 1.1; }
-.tool-heading p { color: var(--text-secondary); font-size: 0.8125rem; margin: 0.125rem 0 0; }
-
-.workspace { display: grid; grid-template-columns: 1fr; gap: 1rem; }
-@media (min-width: 768px) { .workspace { grid-template-columns: 1fr 1fr; align-items: stretch; } }
-.panel { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 1rem; padding: 1.125rem; display: flex; flex-direction: column; gap: 1rem; }
-
-.input-label { color: var(--text-secondary); font-size: 0.75rem; font-weight: 700; }
-.color-input { width: 100%; padding: 0.625rem 0.75rem; border: 1px solid var(--border-color); border-radius: 0.625rem; background: var(--bg-elevated); color: var(--text-primary); font-size: 0.9375rem; font-family: var(--font-family-mono, monospace); outline: none; box-sizing: border-box; }
+.input-label { color: var(--text-secondary); font-size: 0.875rem; font-weight: 700; }
+.input-row { display: flex; gap: 0.5rem; align-items: stretch; }
+.color-input { flex: 1; min-width: 0; padding: 0.625rem 0.75rem; border: 1px solid var(--border-color); border-radius: 0.625rem; background: var(--bg-elevated); color: var(--text-primary); font-size: 0.9375rem; font-family: var(--font-family-mono, monospace); outline: none; box-sizing: border-box; }
 .color-input:focus { border-color: var(--brand-500); }
+
+.picker-wrap {
+  display: flex; align-items: center; justify-content: center;
+  width: 2.75rem; flex-shrink: 0;
+  border: 1px solid var(--border-color); border-radius: 0.625rem;
+  background: var(--bg-elevated); color: var(--text-secondary);
+  cursor: pointer; position: relative; overflow: hidden;
+  transition: border-color 0.15s;
+}
+.picker-wrap:hover { border-color: var(--brand-500); color: var(--brand-500); }
+.color-picker {
+  position: absolute; inset: 0; opacity: 0;
+  width: 100%; height: 100%; cursor: pointer;
+  border: 0; padding: 0;
+}
 
 .swatch-row { display: flex; align-items: center; gap: 0.625rem; padding: 0.5rem 0.75rem; border-radius: 0.5rem; background: var(--bg-elevated); }
 .swatch { width: 2rem; height: 2rem; border-radius: 0.375rem; border: 1px solid rgba(0,0,0,.1); flex-shrink: 0; }
@@ -166,25 +182,17 @@ onUnmounted(() => { if (convertTimer) clearTimeout(convertTimer); if (toastTimer
 .swatch-empty { display: flex; align-items: center; justify-content: center; padding: 1.5rem; border-radius: 0.5rem; background: var(--bg-elevated); color: var(--text-secondary); font-size: 0.8125rem; }
 
 .history-bar { display: flex; flex-direction: column; gap: 0.25rem; }
-.history-chip { width: 100%; padding: 0.3125rem 0.5rem; border: 1px solid var(--border-color); border-radius: 0.375rem; background: var(--bg-elevated); color: var(--text-secondary); font-size: 0.6875rem; cursor: pointer; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: border-color 0.15s, color 0.15s; display: flex; align-items: center; gap: 0.375rem; }
+.history-chip { width: 100%; padding: 0.3125rem 0.5rem; border: 1px solid var(--border-color); border-radius: 0.375rem; background: var(--bg-elevated); color: var(--text-secondary); font-size: 0.8125rem; cursor: pointer; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: border-color 0.15s, color 0.15s; display: flex; align-items: center; gap: 0.375rem; }
 .history-chip:hover { border-color: var(--brand-500); color: var(--brand-500); }
 .chip-swatch { width: 0.875rem; height: 0.875rem; border-radius: 3px; flex-shrink: 0; border: 1px solid rgba(0,0,0,.1); }
 
 .results-list { display: flex; flex-direction: column; gap: 0.25rem; }
 .result-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.4375rem 0.625rem; border-radius: 0.375rem; cursor: pointer; transition: background 0.15s; }
 .result-row:hover { background: var(--bg-elevated); }
-.result-label { font-size: 0.6875rem; font-weight: 700; color: var(--text-secondary); min-width: 3rem; }
+.result-label { font-size: 0.8125rem; font-weight: 700; color: var(--text-secondary); min-width: 3rem; }
 .result-value { flex: 1; font-family: var(--font-family-mono, monospace); font-size: 0.8125rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.result-action { font-size: 0.6875rem; color: var(--brand-500); opacity: 0; transition: opacity 0.15s; flex-shrink: 0; }
+.result-action { font-size: 0.8125rem; color: var(--brand-500); opacity: 0; transition: opacity 0.15s; flex-shrink: 0; }
 .result-row:hover .result-action { opacity: 1; }
 
 .results-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; color: var(--text-secondary); font-size: 0.8125rem; }
-
-.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-
-.toast { position: fixed; left: 50%; bottom: 1.5rem; z-index: 1000; transform: translateX(-50%); padding: 0.625rem 0.875rem; border-radius: 999px; color: #fff; background: #18181b; box-shadow: var(--shadow-3); font-size: 0.8125rem; font-weight: 700; }
-.toast.success { background: #10b981; }
-.toast.error { background: #ef4444; }
-.toast-enter-active, .toast-leave-active { transition: opacity 0.2s, transform 0.2s; }
-.toast-enter-from, .toast-leave-to { opacity: 0; transform: translate(-50%, 0.5rem); }
 </style>

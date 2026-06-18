@@ -24,7 +24,7 @@
 
       <div v-if="pipelineFrom" class="pipeline-banner">
         <ArrowRightLeft :size="14" />
-        <span>来自「{{ pipelineFrom }}」的流转图片</span>
+        <span>来自「{{ pipelineFrom }}」的传递数据</span>
       </div>
 
       <div class="workspace">
@@ -302,48 +302,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.tool-page { min-height: 100vh; background: var(--bg-main); color: var(--text-primary); }
-
-.tool-main {
-  width: 100%; max-width: 72rem; margin: 0 auto;
-  padding: 5rem 1rem 2.5rem;
-}
-@media (min-width: 640px) { .tool-main { padding: 5.5rem 1.5rem 3rem; } }
-@media (min-width: 1024px) { .tool-main { padding: 5.5rem 2rem 3rem; } }
-
-.tool-topbar { margin-bottom: 0.75rem; }
-.back-link { display: inline-flex; align-items: center; gap: 0.375rem; color: var(--text-secondary); font-size: 0.8125rem; }
-.back-link:hover { color: var(--brand-500); }
-
-.tool-header { margin-bottom: 1.25rem; }
-.tool-heading { display: flex; align-items: center; gap: 0.75rem; }
-.heading-icon {
-  width: 2.75rem; height: 2.75rem; display: flex; align-items: center; justify-content: center;
-  border-radius: 0.5rem; color: #06b6d4;
-  background: color-mix(in srgb, #06b6d4 14%, transparent);
-}
-.tool-heading h1 { font-size: 1.375rem; margin: 0; line-height: 1.1; }
-.tool-heading p { color: var(--text-secondary); font-size: 0.8125rem; margin: 0.125rem 0 0; }
-
-.pipeline-banner {
-  display: inline-flex; align-items: center; gap: 0.5rem;
-  padding: 0.4375rem 0.75rem; margin-bottom: 0.75rem; border-radius: 0.5rem;
-  background: color-mix(in srgb, #06b6d4 10%, transparent);
-  border: 1px solid color-mix(in srgb, #06b6d4 25%, transparent);
-  color: #0e7490; font-size: 0.75rem; font-weight: 600;
-}
-
-/* ====== 双栏 ====== */
-.workspace {
-  display: grid; grid-template-columns: 1fr; gap: 1rem;
-}
-@media (min-width: 768px) { .workspace { grid-template-columns: 1fr 1fr; align-items: stretch; } }
-
-.panel {
-  background: var(--bg-surface); border: 1px solid var(--border-color);
-  border-radius: 1rem; padding: 0.875rem;
-  display: flex; flex-direction: column; gap: 1rem;
-}
+.heading-icon { --tool-color: #10b981; }
 
 .upload-zone {
   flex: 1; min-height: 12rem;
@@ -376,7 +335,7 @@ onUnmounted(() => {
   width: 100%; padding: 0.875rem; word-break: break-all;
 }
 .result-label {
-  color: var(--text-secondary); font-size: 0.6875rem; font-weight: 700;
+  color: var(--text-secondary); font-size: 0.8125rem; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.5rem;
 }
 .result-text {
@@ -385,26 +344,15 @@ onUnmounted(() => {
   background: var(--bg-surface); padding: 0.625rem 0.75rem; border-radius: 0.5rem;
 }
 .result-hint {
-  margin-top: 0.5rem; color: var(--brand-500); font-size: 0.75rem;
+  margin-top: 0.5rem; color: var(--brand-500); font-size: 0.875rem;
 }
 
 /* --- 按钮 --- */
-.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.btn {
-  min-height: 2.25rem; display: inline-flex; align-items: center; justify-content: center;
-  gap: 0.375rem; border: 0; border-radius: 0.375rem; padding: 0 0.875rem;
-  font-weight: 700; font-size: 0.8125rem; cursor: pointer;
-  transition: transform 0.15s, opacity 0.15s, background 0.15s;
-}
-.btn.primary { background: var(--brand-500); color: #fff; }
-.btn.secondary { background: var(--bg-elevated); color: var(--text-primary); }
 .btn.pipeline {
   background: color-mix(in srgb, #06b6d4 12%, transparent);
   color: #0e7490; border: 1px solid color-mix(in srgb, #06b6d4 25%, transparent);
 }
 .btn.pipeline:hover { background: color-mix(in srgb, #06b6d4 20%, transparent); }
-.btn:hover { transform: translateY(-1px); }
-.btn:disabled { cursor: not-allowed; opacity: 0.5; transform: none; }
 
 /* --- 历史 --- */
 .history-bar {
@@ -414,20 +362,8 @@ onUnmounted(() => {
   width: 100%; padding: 0.375rem 0.625rem;
   border: 1px solid var(--border-color); border-radius: 0.375rem;
   background: var(--bg-elevated); color: var(--text-secondary);
-  font-size: 0.6875rem; text-align: left;
+  font-size: 0.8125rem; text-align: left;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     outline: none;
 }
-
-/* ====== Toast ====== */
-.toast {
-  position: fixed; left: 50%; bottom: 1.5rem; z-index: 1000;
-  transform: translateX(-50%); padding: 0.625rem 0.875rem; border-radius: 999px;
-  color: #fff; background: #18181b; box-shadow: var(--shadow-3);
-  font-size: 0.8125rem; font-weight: 700;
-}
-.toast.success { background: #10b981; }
-.toast.error { background: #ef4444; }
-.toast-enter-active, .toast-leave-active { transition: opacity 0.2s, transform 0.2s; }
-.toast-enter-from, .toast-leave-to { opacity: 0; transform: translate(-50%, 0.5rem); }
 </style>

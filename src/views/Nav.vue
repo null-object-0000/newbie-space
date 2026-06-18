@@ -197,6 +197,23 @@ const rawData = navData.map((cat: any) => {
   }
 })
 
+// 自有工具完整列表（用于动态填充子菜单）
+const selfToolsList = [
+  { name: '背景透明化', icon: 'image-off', link: '/tools/background-transparent', desc: '将白色或指定颜色背景转换为透明 PNG' },
+  { name: '图片尺寸调整', icon: 'crop', link: '/tools/image-resize', desc: '自由调整图片宽度和高度' },
+  { name: '二维码生成', icon: 'qr-code', link: '/tools/qrcode-gen', desc: '输入文字或链接生成二维码' },
+  { name: '二维码反解析', icon: 'scan-line', link: '/tools/qrcode-decode', desc: '上传二维码图片，解析其中内容' },
+  { name: 'URL 编解码', icon: 'link-2', link: '/tools/url-encoder', desc: '对文本进行 URL 编码或解码' },
+  { name: '文本哈希', icon: 'fingerprint', link: '/tools/hash-text', desc: '计算 MD5/SHA 等哈希值' },
+  { name: '图片格式转换', icon: 'shuffle', link: '/tools/format-convert', desc: '将图片转换为 PNG/JPEG/WebP' },
+  { name: '时间戳转换', icon: 'clock', link: '/tools/date-converter', desc: '日期字符串与 Unix 时间戳互转' },
+  { name: '颜色转换', icon: 'palette', link: '/tools/color-converter', desc: '颜色值多格式互转' },
+  { name: '随机端口生成', icon: 'network', link: '/tools/random-port', desc: '随机生成合法端口号' },
+  { name: '文本统计', icon: 'bar-chart-3', link: '/tools/text-statistics', desc: '统计字符数、单词数、行数等' },
+  { name: '文本差异对比', icon: 'git-compare', link: '/tools/text-diff', desc: '对比两段文本的差异' },
+  { name: 'Docker Run 转换', icon: 'container', link: '/tools/docker-compose', desc: 'docker run 转 docker-compose.yml' }
+]
+
 // 使用自定义主题管理
 const { isDark, toggleDark } = useTheme()
 const { site } = useData()
@@ -281,6 +298,13 @@ const isInMainlandChina = (): boolean => {
 
 // 处理链接点击
 const handleLinkClick = (linkUrl: string, linkData?: any) => {
+  // 内部路由导航（自有工具页面）
+  if (linkUrl.startsWith('/')) {
+    incrementClickCount(linkUrl)
+    router.push(linkUrl)
+    return
+  }
+
   // 查找链接数据
   let link: any = linkData
   if (!link) {
@@ -416,13 +440,42 @@ const hasClickRecords = computed(() => {
     Object.values(clickCounts.value).some(count => count > 0)
 })
 
-// 合并后的分类数据（包含近期使用）
+// 自有工具的常用子菜单（按点击次数排序，最多 8 个）
+const recentSelfToolsSubLinks = computed(() => {
+  const recent = selfToolsList
+    .map(t => ({ ...t, clickCount: clickCounts.value[t.link] || 0 }))
+    .filter(t => t.clickCount > 0)
+    .sort((a, b) => b.clickCount - a.clickCount)
+    .slice(0, 8)
+    .map(({ clickCount, ...t }) => t)
+  return recent.length > 0 ? recent : undefined
+})
+
+// 为"自有工具箱"卡片注入动态子菜单
+const injectSelfToolsSubLinks = (link: any) => {
+  if (link.name === '自有工具箱') {
+    return { ...link, subLinks: recentSelfToolsSubLinks.value }
+  }
+  return link
+}
+
+// 合并后的分类数据（包含近期使用 + 动态子菜单）
 const displayData = computed(() => {
   const categories = []
   if (recentUsedCategory.value) {
-    categories.push(recentUsedCategory.value)
+    const links = recentUsedCategory.value.links.map(injectSelfToolsSubLinks)
+    categories.push({ ...recentUsedCategory.value, links })
   }
-  categories.push(...rawData)
+
+  for (const cat of rawData) {
+    if (cat.name === '常用工具') {
+      const links = cat.links.map(injectSelfToolsSubLinks)
+      categories.push({ ...cat, links })
+    } else {
+      categories.push(cat)
+    }
+  }
+
   return categories
 })
 

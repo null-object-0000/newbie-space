@@ -232,7 +232,7 @@ const goToPost = (slug: string) => {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   color: var(--text-muted);
   margin-bottom: 0.5rem;
 }
@@ -281,7 +281,7 @@ const goToPost = (slug: string) => {
 }
 
 .post-tag {
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   color: var(--brand-600);
   background: rgba(59, 130, 246, 0.1);
   padding: 0.125rem 0.5rem;

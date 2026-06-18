@@ -547,14 +547,14 @@ const getTechColor = (tech: string) => {
 
 @media (min-width: 375px) {
   .card-badge {
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     margin-bottom: 0.75rem;
   }
 }
 
 @media (min-width: 640px) {
   .card-badge {
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     margin-bottom: 1rem;
   }
 }
@@ -601,7 +601,7 @@ const getTechColor = (tech: string) => {
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
@@ -635,13 +635,13 @@ const getTechColor = (tech: string) => {
 .tag {
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
-  font-size: 0.6875rem;
+  font-size: 0.8125rem;
   color: var(--text-muted);
 }
 
 @media (min-width: 640px) {
   .tag {
-    font-size: 0.75rem;
+    font-size: 0.875rem;
   }
 }
 
@@ -716,7 +716,7 @@ const getTechColor = (tech: string) => {
 }
 
 .about-desc {
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   opacity: 0.8;
   margin: 0.375rem 0 0;
   line-height: 1.5;
@@ -790,14 +790,14 @@ const getTechColor = (tech: string) => {
 
 @media (min-width: 375px) {
   .project-badge {
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     margin-bottom: 0.75rem;
   }
 }
 
 @media (min-width: 640px) {
   .project-badge {
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     margin-bottom: 1rem;
   }
 }
@@ -893,7 +893,7 @@ const getTechColor = (tech: string) => {
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   word-wrap: break-word;
   overflow-wrap: break-word;
   flex: 1;
@@ -931,7 +931,7 @@ const getTechColor = (tech: string) => {
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   color: var(--text-muted);
   flex-wrap: wrap;
 }
@@ -1072,18 +1072,18 @@ const getTechColor = (tech: string) => {
 
 @media (min-width: 375px) {
   .nav-badge {
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
   }
 }
 
 @media (min-width: 640px) {
   .nav-badge {
-    font-size: 0.75rem;
+    font-size: 0.875rem;
   }
 }
 
 .view-all {
-  font-size: 0.6875rem;
+  font-size: 0.8125rem;
   color: var(--text-muted);
   text-decoration: none;
   transition: color 0.2s;
@@ -1096,7 +1096,7 @@ const getTechColor = (tech: string) => {
 
 @media (min-width: 640px) {
   .view-all {
-    font-size: 0.75rem;
+    font-size: 0.875rem;
   }
 }
 

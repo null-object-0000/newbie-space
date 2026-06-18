@@ -7,7 +7,7 @@
         class="pipeline-select"
         :disabled="disabled"
       >
-        <option disabled value="">— 流转到 —</option>
+        <option disabled value="">— 发送到 —</option>
         <option v-for="t in tools" :key="t.id" :value="t.id">{{ t.name }}</option>
       </select>
       <ChevronDown :size="14" class="select-chevron" />
@@ -18,7 +18,7 @@
       @click="handleSend"
     >
       <ArrowRightLeft :size="16" />
-      <span>流转</span>
+      <span>发送</span>
     </button>
   </div>
 </template>

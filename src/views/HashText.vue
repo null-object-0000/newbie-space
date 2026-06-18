@@ -20,19 +20,23 @@
 
       <div v-if="pipelineFrom" class="pipeline-banner">
         <ArrowRightLeft :size="14" />
-        <span>来自「{{ pipelineFrom }}」的流转文本</span>
+        <span>来自「{{ pipelineFrom }}」的传递数据</span>
       </div>
 
       <div class="workspace">
         <!-- 左侧：输入 + 编码 -->
         <div class="panel panel-left">
-          <label class="section-label" for="hash-input">输入文本</label>
+          <div class="panel-header-row">
+            <label class="section-label" for="hash-input">输入文本</label>
+            <span class="char-count">{{ text.length.toLocaleString() }} / 10,000,000</span>
+          </div>
           <textarea
             id="hash-input"
             ref="inputRef"
             v-model="text"
             placeholder="输入要计算哈希的文本…"
             rows="5"
+            maxlength="10000000"
             @input="scheduleHash"
           ></textarea>
 
@@ -51,7 +55,10 @@
 
         <!-- 右侧：结果 -->
         <div class="panel panel-right">
-          <span class="section-label">哈希结果</span>
+          <div class="panel-header-row">
+            <h3 class="panel-title">哈希结果</h3>
+            <span class="local-badge">所有结果均在本地计算，不会上传或保存</span>
+          </div>
 
           <div class="results" :class="{ empty: !results.length }">
             <div v-if="!results.length" class="results-empty">
@@ -72,10 +79,7 @@
           </div>
 
           <div class="actions">
-            <button class="btn secondary" :disabled="!selectedAlgo" @click="copySelected">
-              <Copy :size="14" />{{ copyLabel }}
-            </button>
-            <button class="btn secondary" :disabled="!results.length" @click="copyAll">
+            <button class="btn primary" :disabled="!results.length" @click="copyAll">
               <Copy :size="14" />复制全部
             </button>
             <button class="btn secondary" :disabled="!text" @click="clearAll">
@@ -140,7 +144,6 @@ const text = ref('')
 const encoding = ref<HashEncoding>('hex')
 const results = ref<HashResult[]>([])
 const selectedAlgo = ref('')
-const copyLabel = ref('复制')
 const toastMessage = ref('')
 const toastType = ref<'success' | 'error'>('success')
 
@@ -166,19 +169,7 @@ function selectResult(r: HashResult) {
   if (selectedAlgo.value === r.algo) { selectedAlgo.value = ''; return }
   selectedAlgo.value = r.algo
   navigator.clipboard.writeText(r.hash).then(() => {
-    copyLabel.value = '已复制'
     showToast(`${r.algo} 已复制`, 'success')
-    setTimeout(() => { copyLabel.value = '复制' }, 1500)
-  }).catch(() => showToast('复制失败', 'error'))
-}
-
-function copySelected() {
-  const sel = results.value.find(r => r.algo === selectedAlgo.value)
-  if (!sel) return
-  navigator.clipboard.writeText(sel.hash).then(() => {
-    copyLabel.value = '已复制'
-    showToast(`${sel.algo} 已复制`, 'success')
-    setTimeout(() => { copyLabel.value = '复制' }, 1500)
   }).catch(() => showToast('复制失败', 'error'))
 }
 
@@ -203,89 +194,40 @@ onUnmounted(() => { if (hashTimer) clearTimeout(hashTimer); if (toastTimer) clea
 </script>
 
 <style scoped>
-.tool-page { min-height: 100vh; background: var(--bg-main); color: var(--text-primary); }
-.tool-main { width: 100%; max-width: 72rem; margin: 0 auto; padding: 5rem 1rem 2.5rem; }
-@media (min-width: 640px) { .tool-main { padding: 5.5rem 1.5rem 3rem; } }
-@media (min-width: 1024px) { .tool-main { padding: 5.5rem 2rem 3rem; } }
-
-.tool-topbar { margin-bottom: 0.75rem; }
-.back-link { display: inline-flex; align-items: center; gap: 0.375rem; color: var(--text-secondary); font-size: 0.8125rem; }
-.back-link:hover { color: var(--brand-500); }
-
-.tool-header { margin-bottom: 1rem; }
-.tool-heading { display: flex; align-items: center; gap: 0.75rem; }
+/* Tool-specific color for heading icon */
 .heading-icon {
-  width: 2.75rem; height: 2.75rem; display: flex; align-items: center; justify-content: center;
-  border-radius: 0.5rem; color: #ef4444;
-  background: color-mix(in srgb, #ef4444 14%, transparent);
-}
-.tool-heading h1 { font-size: 1.375rem; margin: 0; line-height: 1.1; }
-.tool-heading p { color: var(--text-secondary); font-size: 0.8125rem; margin: 0.125rem 0 0; }
-
-.pipeline-banner {
-  display: inline-flex; align-items: center; gap: 0.5rem;
-  padding: 0.375rem 0.625rem; margin-bottom: 0.75rem; border-radius: 0.375rem;
-  background: color-mix(in srgb, #f59e0b 10%, transparent);
-  border: 1px solid color-mix(in srgb, #f59e0b 25%, transparent);
-  color: #b45309; font-size: 0.75rem; font-weight: 600;
+  --tool-color: #ef4444;
 }
 
-/* ====== 双栏 ====== */
-.workspace {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.75rem;
+/* --- Panel header row --- */
+.panel-header-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
 }
-@media (min-width: 768px) {
-  .workspace { grid-template-columns: 1fr 1fr; align-items: stretch; }
+.panel-title {
+  font-size: 0.875rem; font-weight: 700; margin: 0;
 }
-
-.panel {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: 0.5rem;
-  padding: 0.875rem;
-  display: flex; flex-direction: column; gap: 0.75rem;
+.local-badge {
+  font-size: 0.625rem; font-weight: 600;
+  color: var(--text-muted);
+  padding: 0.1875rem 0.5rem;
+  background: var(--bg-elevated);
+  border-radius: 999px;
+  white-space: nowrap;
 }
-
-.section-label {
-  font-size: 0.6875rem; font-weight: 700;
-  color: var(--text-secondary);
-  text-transform: uppercase; letter-spacing: 0.04em;
+.char-count {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
-/* --- 输入 --- */
-.panel-left textarea {
-  width: 100%; padding: 0.625rem 0.75rem;
-  border: 1px solid var(--border-color); border-radius: 0.375rem;
-  background: var(--bg-elevated); color: var(--text-primary);
-  font-size: 0.9375rem; font-family: inherit; line-height: 1.6;
-  resize: vertical; outline: none; box-sizing: border-box;
-}
-.panel-left textarea:focus { border-color: var(--brand-500); }
-
+/* --- Encoding bar --- */
 .encoding-bar {
   display: flex; align-items: center; gap: 0.5rem;
 }
 .encoding-bar .section-label { margin: 0; white-space: nowrap; }
 
-.segmented {
-  flex: 1; display: flex;
-  padding: 0.1875rem; border-radius: 0.25rem; background: var(--bg-elevated);
-}
-.segmented button {
-  flex: 1; min-height: 1.75rem; padding: 0 0.5rem;
-  border: 0; border-radius: 0.1875rem;
-  background: transparent; color: var(--text-secondary);
-  font-size: 0.6875rem; font-weight: 600; cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-.segmented button.active {
-  background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--shadow-1);
-}
-
-/* --- 结果 --- */
-.results { flex: 1; display: flex; flex-direction: column; gap: 0.375rem; }
+/* --- Results --- */
+.results { flex: 1; display: flex; flex-direction: column; }
 .results.empty {
   align-items: center; justify-content: center;
   border-radius: 0.375rem; background: var(--bg-elevated);
@@ -298,25 +240,27 @@ onUnmounted(() => { if (hashTimer) clearTimeout(hashTimer); if (toastTimer) clea
 .result-row {
   display: grid; grid-template-columns: 5.5rem 1fr auto;
   align-items: center; gap: 0.5rem;
-  padding: 0.375rem 0.625rem;
-  border: 1px solid var(--border-color); border-radius: 0.25rem;
-  background: var(--bg-elevated); color: inherit;
+  padding: 0.625rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--border-color);
+  background: transparent; color: inherit;
   font-family: var(--font-family-mono, monospace);
   cursor: pointer; text-align: left;
   width: 100%;
-  transition: border-color 0.15s, background 0.15s;
+  transition: background 0.15s;
 }
-.result-row:hover { border-color: var(--brand-500); }
+.result-row:last-child { border-bottom: 0; }
+.result-row:hover { background: var(--bg-elevated); border-radius: 0.25rem; }
 .result-row.selected {
-  border-color: #ef4444;
   background: color-mix(in srgb, #ef4444 8%, transparent);
+  border-radius: 0.25rem;
 }
 .result-algo {
-  font-size: 0.6875rem; font-weight: 700;
+  font-size: 0.8125rem; font-weight: 700;
   color: var(--text-primary);
 }
 .result-hash {
-  font-size: 0.75rem; line-height: 1.5;
+  font-size: 0.875rem; line-height: 1.5;
   word-break: break-all; color: var(--text-primary);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
@@ -328,32 +272,4 @@ onUnmounted(() => { if (hashTimer) clearTimeout(hashTimer); if (toastTimer) clea
 }
 .result-row:hover .copy-hint,
 .result-row.selected .copy-hint { opacity: 0.6; }
-
-/* --- 操作 --- */
-.actions {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
-}
-
-.btn {
-  min-height: 2.25rem; display: inline-flex; align-items: center; justify-content: center;
-  gap: 0.375rem; border: 0; border-radius: 0.375rem; padding: 0 0.875rem;
-  font-weight: 700; font-size: 0.8125rem; cursor: pointer;
-  transition: transform 0.15s, opacity 0.15s, background 0.15s;
-}
-.btn.primary { background: var(--brand-500); color: #fff; }
-.btn.secondary { background: var(--bg-elevated); color: var(--text-primary); }
-.btn:hover { transform: translateY(-1px); }
-.btn:disabled { cursor: not-allowed; opacity: 0.5; transform: none; }
-
-/* ====== Toast ====== */
-.toast {
-  position: fixed; left: 50%; bottom: 1.5rem; z-index: 1000;
-  transform: translateX(-50%); padding: 0.5rem 0.75rem; border-radius: 999px;
-  color: #fff; background: #18181b; box-shadow: var(--shadow-3);
-  font-size: 0.8125rem; font-weight: 700;
-}
-.toast.success { background: #10b981; }
-.toast.error { background: #ef4444; }
-.toast-enter-active, .toast-leave-active { transition: opacity 0.2s, transform 0.2s; }
-.toast-enter-from, .toast-leave-to { opacity: 0; transform: translate(-50%, 0.5rem); }
 </style>

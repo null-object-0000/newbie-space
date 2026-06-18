@@ -24,46 +24,71 @@
 
       <div v-if="pipelineFrom" class="pipeline-banner">
         <ArrowRightLeft :size="14" />
-        <span>来自「{{ pipelineFrom }}」的流转文本</span>
+        <span>来自「{{ pipelineFrom }}」的传递数据</span>
       </div>
 
       <div class="workspace">
         <!-- 左侧：输入 + 控制 -->
         <div class="panel panel-left">
-          <textarea
-            v-model="text"
-            rows="2"
-            placeholder="输入网址或文字…"
-            @input="scheduleGenerate"
-          ></textarea>
+          <div class="textarea-wrap">
+            <textarea
+              v-model="text"
+              rows="3"
+              maxlength="2000"
+              placeholder="请输入网址（如 https://example.com）或任意文本内容..."
+              @input="scheduleGenerate"
+            ></textarea>
+            <span class="char-count">{{ text.length }} / 2000</span>
+          </div>
 
           <div class="ctrl-grid">
             <div class="ctrl-item">
               <label>尺寸</label>
-              <div class="slider-row">
-                <input type="range" v-model.number="size" min="160" max="800" step="20" @input="scheduleGenerate">
-                <span>{{ size }}px</span>
-              </div>
-            </div>
-            <div class="ctrl-item">
-              <label>边距</label>
-              <div class="slider-row">
-                <input type="range" v-model.number="margin" min="0" max="8" step="1" @input="scheduleGenerate">
-                <span>{{ margin }}</span>
-              </div>
-            </div>
-            <div class="ctrl-item">
-              <label>纠错</label>
               <div class="segmented">
-                <button v-for="lvl in ecLevels" :key="lvl" :class="{ active: errorCorrectionLevel === lvl }" @click="setECLevel(lvl)">{{ lvl }}</button>
+                <button
+                  v-for="s in sizePresets" :key="s"
+                  :class="{ active: size === s }"
+                  @click="setSize(s)"
+                >{{ s }}</button>
               </div>
+            </div>
+            <div class="ctrl-item">
+              <label>边距（空白区）</label>
+              <div class="segmented">
+                <button
+                  v-for="(m, i) in marginPresets" :key="i"
+                  :class="{ active: marginIndex === i }"
+                  @click="setMargin(i)"
+                >{{ m }}%</button>
+              </div>
+            </div>
+            <div class="ctrl-item">
+              <label>纠错等级</label>
+              <div class="segmented">
+                <button
+                  v-for="lvl in ecLevels" :key="lvl"
+                  :class="{ active: errorCorrectionLevel === lvl }"
+                  @click="setECLevel(lvl)"
+                >{{ lvl }}</button>
+              </div>
+              <span class="ctrl-hint">纠错等级越高，容错能力越强，但密度也更高。</span>
             </div>
             <div class="ctrl-item colors">
               <label>颜色</label>
               <div class="color-pair">
-                <input v-model="darkColor" type="color" class="pick" @input="scheduleGenerate" title="模块色">
-                <input v-model="lightColor" type="color" class="pick" @input="scheduleGenerate" title="背景色">
-                <button class="tiny-btn" @click="resetColors" title="默认"><RotateCcw :size="12" /></button>
+                <div class="color-group">
+                  <input v-model="darkColor" type="color" class="pick" @input="scheduleGenerate" title="前景色">
+                  <span class="color-label">前景色</span>
+                </div>
+                <div class="color-group">
+                  <input v-model="lightColor" type="color" class="pick" @input="scheduleGenerate" title="背景色" :disabled="transparentBg">
+                  <span class="color-label">背景色</span>
+                </div>
+                <button class="tiny-btn" @click="resetColors" title="重置默认"><RotateCcw :size="12" /></button>
+                <label class="checkbox-label">
+                  <input type="checkbox" v-model="transparentBg" @change="scheduleGenerate">
+                  <span>透明背景</span>
+                </label>
               </div>
             </div>
           </div>
@@ -71,19 +96,20 @@
 
         <!-- 右侧：预览 + 操作 -->
         <div class="panel panel-right">
+          <h3 class="panel-title">二维码预览</h3>
           <div class="preview-area" :class="{ empty: !qrDataUrl }">
             <img v-if="qrDataUrl" :src="qrDataUrl" alt="二维码">
             <div v-else class="preview-empty">
               <QrCode :size="36" />
-              <span>输入内容后自动生成</span>
+              <span>请在左侧输入内容生成二维码</span>
             </div>
           </div>
           <div class="actions">
-            <button class="btn secondary" :disabled="!qrDataUrl" @click="copyQR">
-              <Copy :size="16" />{{ copyLabel }}
-            </button>
             <button class="btn primary" :disabled="!qrDataUrl" @click="downloadQR">
               <Download :size="16" />下载 PNG
+            </button>
+            <button class="btn secondary" :disabled="!qrDataUrl" @click="copyQR">
+              <Copy :size="16" />{{ copyLabel }}
             </button>
             <PipelineSend
               :tools="downstreamTools"
@@ -92,6 +118,11 @@
             />
           </div>
         </div>
+      </div>
+
+      <div class="tips-bar">
+        <Info :size="14" />
+        <span>建议使用 M 级纠错，在保证扫描成功率的同时，二维码密度更适中，美观度更高。</span>
       </div>
 
       <div v-if="history.length" class="history-bar">
@@ -124,6 +155,7 @@ import {
   ArrowRightLeft,
   Copy,
   Download,
+  Info,
   QrCode,
   RotateCcw
 } from 'lucide-vue-next'
@@ -136,11 +168,15 @@ const { isDark } = useTheme()
 
 // --- 状态 ---
 const text = ref('')
-const size = ref(320)
-const margin = ref(2)
+const sizePresets = [256, 512, 768, 1024]
+const size = ref(512)
+const marginPresets = [0, 10, 20, 30, 40]
+const marginMap = [0, 2, 4, 6, 8] // 百分比 → 模块数
+const marginIndex = ref(2) // 默认 20%
 const errorCorrectionLevel = ref<ErrorCorrectionLevel>('M')
-const darkColor = ref('#000000')
+const darkColor = ref('#111827')
 const lightColor = ref('#ffffff')
+const transparentBg = ref(false)
 const qrDataUrl = ref('')
 const isGenerating = ref(false)
 const copyLabel = ref('复制')
@@ -176,6 +212,16 @@ function sendQRTo(target: typeof downstreamTools.value[number]) {
 }
 
 const ecLevels: ErrorCorrectionLevel[] = ['L', 'M', 'Q', 'H']
+
+function setSize(s: number) {
+  size.value = s
+  scheduleGenerate()
+}
+
+function setMargin(i: number) {
+  marginIndex.value = i
+  scheduleGenerate()
+}
 
 // --- 历史记录 ---
 const HISTORY_KEY = 'qrcode-history'
@@ -231,12 +277,13 @@ async function doGenerate() {
     const result = await generateQRCode({
       text: text.value,
       width: size.value,
-      margin: margin.value,
+      margin: marginMap[marginIndex.value],
       color: {
         dark: darkColor.value,
         light: lightColor.value
       },
-      errorCorrectionLevel: errorCorrectionLevel.value
+      errorCorrectionLevel: errorCorrectionLevel.value,
+      transparentBg: transparentBg.value
     })
     qrDataUrl.value = result.dataUrl
     pushHistory(text.value)
@@ -255,8 +302,9 @@ function setECLevel(level: ErrorCorrectionLevel) {
 }
 
 function resetColors() {
-  darkColor.value = '#000000'
+  darkColor.value = '#111827'
   lightColor.value = '#ffffff'
+  transparentBg.value = false
   scheduleGenerate()
 }
 
@@ -317,81 +365,108 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.tool-page {
-  min-height: 100vh;
-  background: var(--bg-main);
-  color: var(--text-primary);
+.heading-icon { --tool-color: #8b5cf6; }
+
+/* --- Textarea with char count --- */
+.textarea-wrap {
+  position: relative;
+}
+.char-count {
+  position: absolute;
+  right: 0.5rem; bottom: 0.375rem;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
 }
 
-.tool-main {
-  width: 100%;
-  max-width: 72rem;
-  margin: 0 auto;
-  padding: 5rem 1rem 2.5rem;
-}
-@media (min-width: 640px) { .tool-main { padding: 5.5rem 1.5rem 3rem; } }
-@media (min-width: 1024px) { .tool-main { padding: 5.5rem 2rem 3rem; } }
-
-.tool-topbar { margin-bottom: 0.75rem; }
-.back-link {
-  display: inline-flex; align-items: center; gap: 0.375rem;
-  color: var(--text-secondary); font-size: 0.8125rem;
-}
-.back-link:hover { color: var(--brand-500); }
-
-.tool-header { margin-bottom: 1.25rem; }
-.tool-heading {
-  display: flex; align-items: center; gap: 0.75rem;
-}
-.heading-icon {
-  width: 2.75rem; height: 2.75rem;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 0.5rem;
-  color: #8b5cf6;
-  background: color-mix(in srgb, #8b5cf6 14%, transparent);
-}
-.tool-heading h1 { font-size: 1.375rem; margin: 0; line-height: 1.1; }
-.tool-heading p {
-  color: var(--text-secondary); font-size: 0.8125rem; margin: 0.125rem 0 0;
+/* --- Panel title --- */
+.panel-title {
+  font-size: 0.875rem; font-weight: 700; margin: 0;
 }
 
-/* ====== 双栏工作区 ====== */
-.workspace {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-}
-@media (min-width: 768px) {
-  .workspace {
-    grid-template-columns: 1fr 1fr;
-    align-items: stretch;
-  }
-}
-
-.panel {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: 1rem;
-  padding: 0.875rem;
+/* --- Controls --- */
+.ctrl-grid {
   display: flex; flex-direction: column; gap: 1rem;
 }
-
-/* --- 左侧 --- */
-.panel-left textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid var(--border-color);
-  border-radius: 0.375rem;
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-  font-size: 0.9375rem;
-  font-family: inherit;
-  resize: vertical;
-  outline: none;
-  box-sizing: border-box;
+.ctrl-item {
+  display: flex; flex-direction: column; gap: 0.375rem;
 }
-.panel-left textarea:focus { border-color: var(--brand-500); }
+.ctrl-item label {
+  color: var(--text-secondary); font-size: 0.875rem; font-weight: 700;
+}
+.ctrl-item.colors { grid-column: span 2; }
+.ctrl-hint {
+  font-size: 0.8125rem; color: var(--text-muted); line-height: 1.4;
+}
 
+.color-pair {
+  display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+}
+.color-group {
+  display: flex; align-items: center; gap: 0.375rem;
+}
+.color-label {
+  font-size: 0.8125rem; color: var(--text-secondary);
+}
+.pick {
+  width: 2.25rem; height: 2.25rem; padding: 0.125rem;
+  border: 1px solid var(--border-color); border-radius: 0.5rem;
+  background: var(--bg-surface); cursor: pointer;
+}
+.pick:disabled { opacity: 0.4; cursor: not-allowed; }
+.tiny-btn {
+  width: 2rem; height: 2rem; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border-color); border-radius: 0.375rem;
+  background: var(--bg-surface); color: var(--text-secondary); cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.tiny-btn:hover { border-color: var(--brand-500); color: var(--brand-500); }
+
+.checkbox-label {
+  display: flex; align-items: center; gap: 0.375rem;
+  font-size: 0.875rem; color: var(--text-primary); cursor: pointer;
+  white-space: nowrap;
+}
+.checkbox-label input[type='checkbox'] {
+  accent-color: var(--brand-500);
+}
+
+/* --- Preview --- */
+.preview-area {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  min-height: 20rem; border-radius: 0.375rem; background: #fff; overflow: hidden;
+  /* 透明背景棋盘格 */
+  background-image:
+    linear-gradient(45deg, #ccc 25%, transparent 25%),
+    linear-gradient(-45deg, #ccc 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #ccc 75%),
+    linear-gradient(-45deg, transparent 75%, #ccc 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+}
+.preview-area.empty {
+  background: var(--bg-elevated);
+  background-image: none;
+}
+.preview-area img { display: block; max-width: 100%; max-height: 360px; object-fit: contain; }
+.preview-empty {
+  display: flex; flex-direction: column; align-items: center; gap: 0.625rem;
+  color: var(--text-secondary); font-size: 0.875rem;
+}
+
+/* --- Tips bar --- */
+.tips-bar {
+  display: flex; align-items: center; gap: 0.5rem;
+  margin-top: 1rem; padding: 0.625rem 0.875rem;
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--brand-500) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--brand-500) 15%, transparent);
+  color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5;
+}
+.tips-bar svg { flex-shrink: 0; color: var(--brand-500); }
+
+/* --- History --- */
 .history-bar {
   display: flex; flex-direction: column; gap: 0.25rem;
   margin-top: 0.75rem;
@@ -402,105 +477,9 @@ onUnmounted(() => {
   border-radius: 0.375rem;
   background: var(--bg-elevated);
   color: var(--text-secondary);
-  font-size: 0.6875rem; cursor: pointer; text-align: left;
+  font-size: 0.8125rem; cursor: pointer; text-align: left;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   transition: border-color 0.15s, color 0.15s;
 }
 .history-chip:hover { border-color: var(--brand-500); color: var(--brand-500); }
-
-.ctrl-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.875rem;
-}
-.ctrl-item {
-  display: flex; flex-direction: column; gap: 0.375rem;
-}
-.ctrl-item label {
-  color: var(--text-secondary); font-size: 0.75rem; font-weight: 700;
-}
-.ctrl-item.colors { grid-column: span 2; }
-.slider-row {
-  display: flex; align-items: center; gap: 0.625rem;
-}
-.slider-row input[type='range'] { flex: 1; accent-color: var(--brand-500); }
-.slider-row span {
-  font-family: var(--font-family-mono, monospace);
-  font-size: 0.8125rem; color: var(--text-secondary); min-width: 3rem; text-align: right;
-}
-.segmented {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  padding: 0.25rem; border-radius: 0.5rem; background: var(--bg-elevated);
-}
-.segmented button {
-  min-height: 2rem; border: 0; border-radius: 0.375rem;
-  background: transparent; color: var(--text-secondary);
-  font-weight: 600; font-size: 0.8125rem; cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-.segmented button.active {
-  background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--shadow-1);
-}
-.color-pair {
-  display: flex; align-items: center; gap: 0.625rem;
-}
-.pick {
-  width: 2.25rem; height: 2.25rem; padding: 0.125rem;
-  border: 1px solid var(--border-color); border-radius: 0.5rem;
-  background: var(--bg-surface); cursor: pointer;
-}
-.tiny-btn {
-  width: 2rem; height: 2rem; display: flex; align-items: center; justify-content: center;
-  border: 1px solid var(--border-color); border-radius: 0.375rem;
-  background: var(--bg-surface); color: var(--text-secondary); cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
-}
-.tiny-btn:hover { border-color: var(--brand-500); color: var(--brand-500); }
-
-/* --- 右侧 --- */
-.preview-area {
-  flex: 1; display: flex; align-items: center; justify-content: center;
-  min-height: 20rem; border-radius: 0.375rem; background: #fff; overflow: hidden;
-}
-.preview-area.empty { background: var(--bg-elevated); }
-.preview-area img { display: block; max-width: 100%; max-height: 360px; object-fit: contain; }
-.preview-empty {
-  display: flex; flex-direction: column; align-items: center; gap: 0.625rem;
-  color: var(--text-secondary); font-size: 0.875rem;
-}
-
-.actions {
-  display: flex; gap: 0.5rem;
-}
-.btn {
-  min-height: 2.25rem; display: inline-flex; align-items: center; justify-content: center;
-  gap: 0.375rem; border: 0; border-radius: 0.375rem; padding: 0 0.875rem;
-  font-weight: 700; font-size: 0.8125rem; cursor: pointer;
-  transition: transform 0.15s, opacity 0.15s, background 0.15s;
-}
-.btn.primary { background: var(--brand-500); color: #fff; }
-.btn.secondary { background: var(--bg-elevated); color: var(--text-primary); }
-.btn:hover { transform: translateY(-1px); }
-.btn:disabled { cursor: not-allowed; opacity: 0.5; transform: none; }
-
-.pipeline-banner {
-  display: inline-flex; align-items: center; gap: 0.5rem;
-  padding: 0.4375rem 0.75rem; margin-bottom: 0.75rem;
-  border-radius: 0.5rem;
-  background: color-mix(in srgb, #8b5cf6 10%, transparent);
-  border: 1px solid color-mix(in srgb, #8b5cf6 25%, transparent);
-  color: #6d28d9; font-size: 0.75rem; font-weight: 600;
-}
-
-/* ====== Toast ====== */
-.toast {
-  position: fixed; left: 50%; bottom: 1.5rem; z-index: 1000;
-  transform: translateX(-50%); padding: 0.625rem 0.875rem; border-radius: 999px;
-  color: #fff; background: #18181b; box-shadow: var(--shadow-3);
-  font-size: 0.8125rem; font-weight: 700;
-}
-.toast.success { background: #10b981; }
-.toast.error { background: #ef4444; }
-.toast-enter-active, .toast-leave-active { transition: opacity 0.2s, transform 0.2s; }
-.toast-enter-from, .toast-leave-to { opacity: 0; transform: translate(-50%, 0.5rem); }
 </style>

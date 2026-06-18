@@ -17,9 +17,9 @@
   --c-text-3: rgba(60, 60, 67, 0.56);
   
   /* Text Colors (Semantic naming) */
-  --text-primary: #333639;
-  --text-secondary: #767c82;
-  --text-muted: #9ca3af;
+  --text-primary: #1f2937;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
 
   /* Background Colors */
   --c-bg: #ffffff;
@@ -31,6 +31,11 @@
   --bg-main: #f9fafb;
   --bg-surface: #ffffff;
   --bg-elevated: #f3f4f6;
+
+  /* Page & Badge */
+  --page-bg: #F8FAFC;
+  --badge-bg: #F3F4F6;
+  --badge-text: #4B5563;
 
   /* Border/Divider */
   --c-divider: rgba(60, 60, 67, 0.12);
@@ -103,9 +108,9 @@ html.dark,
   --c-text-3: rgba(235, 235, 245, 0.38);
   
   /* Text Colors (Semantic naming) */
-  --text-primary: #ffffffd1;
-  --text-secondary: #ffffff80;
-  --text-muted: #ffffff4d;
+  --text-primary: #f3f4f6;
+  --text-secondary: #d1d5db;
+  --text-muted: #9ca3af;
 
   --c-bg: #1a1a1a;
   --c-bg-soft: #242424;
@@ -116,6 +121,11 @@ html.dark,
   --bg-main: #09090b;
   --bg-surface: #18181b;
   --bg-elevated: #27272a;
+
+  /* Page & Badge */
+  --page-bg: #09090b;
+  --badge-bg: #27272a;
+  --badge-text: #d1d5db;
 
   --c-divider: rgba(84, 84, 88, 0.48);
   --c-divider-light: rgba(84, 84, 88, 0.32);

@@ -21,7 +21,7 @@
 
       <div v-if="pipelineFrom" class="pipeline-banner">
         <ArrowRightLeft :size="14" />
-        <span>来自「{{ pipelineFrom }}」的流转文本</span>
+        <span>来自「{{ pipelineFrom }}」的传递数据</span>
       </div>
 
       <div class="workspace">
@@ -58,6 +58,7 @@
               v-for="fmt in formats"
               :key="fmt.name"
               class="result-row"
+              :class="{ selected: selectedFormat === fmt.name }"
               @click="copyFormat(fmt)"
             >
               <span class="format-name">{{ fmt.name }}</span>
@@ -69,12 +70,12 @@
           </div>
 
           <div class="actions">
-            <button class="btn secondary" :disabled="!results.length" @click="copyAll">
+            <button class="btn primary" :disabled="!results.length" @click="copyAll">
               <Copy :size="14" />复制全部
             </button>
             <PipelineSend
               :tools="downstreamTools"
-              :disabled="!parsedDate"
+              :disabled="!selectedFormat"
               @send="handlePipelineSend"
             />
           </div>
@@ -114,8 +115,10 @@ const { pipelineFrom, downstreamTools, sendTextTo } = usePipeline({
 })
 
 function handlePipelineSend(target: ToolItem) {
-  if (!parsedDate.value) return
-  const { ok, message } = sendTextTo(target, formats.value[0]?.result || '')
+  if (!selectedFormat.value) return
+  const sel = formats.value.find(f => f.name === selectedFormat.value)
+  if (!sel?.result) return
+  const { ok, message } = sendTextTo(target, sel.result)
   showToast(message, ok ? 'success' : 'error')
 }
 
@@ -140,6 +143,7 @@ const inputText = ref('')
 const parsedDate = ref<Date | null>(null)
 const detectedFormat = ref('')
 const dateValid = ref(false)
+const selectedFormat = ref('')
 const toastMessage = ref('')
 const toastType = ref<'success' | 'error'>('success')
 
@@ -178,6 +182,7 @@ function doParse() {
     parsedDate.value = null
     detectedFormat.value = ''
     dateValid.value = false
+    selectedFormat.value = ''
     return
   }
 
@@ -245,10 +250,9 @@ function formatRelative(d: Date): string {
 
 // --- 操作 ---
 function useNow() {
-  inputText.value = ''
-  parsedDate.value = null
-  detectedFormat.value = ''
-  dateValid.value = false
+  const now = new Date()
+  inputText.value = formatLocal(now)
+  scheduleParse()
 }
 
 function clearInput() {
@@ -259,6 +263,12 @@ function clearInput() {
 }
 
 async function copyFormat(fmt: { name: string; result: string }) {
+  // 点击即选中并复制
+  if (selectedFormat.value === fmt.name) {
+    selectedFormat.value = ''
+  } else {
+    selectedFormat.value = fmt.name
+  }
   try {
     await navigator.clipboard.writeText(fmt.result)
     showToast(`${fmt.name} 已复制`, 'success')
@@ -298,66 +308,9 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.tool-page { min-height: 100vh; background: var(--bg-main); color: var(--text-primary); }
-.tool-main { width: 100%; max-width: 72rem; margin: 0 auto; padding: 5rem 1rem 2.5rem; }
-@media (min-width: 640px) { .tool-main { padding: 5.5rem 1.5rem 3rem; } }
-@media (min-width: 1024px) { .tool-main { padding: 5.5rem 2rem 3rem; } }
-
-.tool-topbar { margin-bottom: 0.75rem; }
-.back-link {
-  display: inline-flex; align-items: center; gap: 0.375rem;
-  color: var(--text-secondary); font-size: 0.8125rem;
-}
-.back-link:hover { color: var(--brand-500); }
-
-.tool-header { margin-bottom: 0.75rem; }
-.tool-heading { display: flex; align-items: center; gap: 0.75rem; }
-.heading-icon {
-  width: 2.75rem; height: 2.75rem; display: flex; align-items: center; justify-content: center;
-  border-radius: 0.5rem; color: #8b5cf6;
-  background: color-mix(in srgb, #8b5cf6 14%, transparent);
-}
-.tool-heading h1 { font-size: 1.375rem; margin: 0; line-height: 1.1; }
-.tool-heading p { color: var(--text-secondary); font-size: 0.8125rem; margin: 0.125rem 0 0; }
-
-.pipeline-banner {
-  display: inline-flex; align-items: center; gap: 0.5rem;
-  padding: 0.375rem 0.625rem; margin-bottom: 0.75rem; border-radius: 0.375rem;
-  background: color-mix(in srgb, #f59e0b 10%, transparent);
-  border: 1px solid color-mix(in srgb, #f59e0b 25%, transparent);
-  color: #b45309; font-size: 0.75rem; font-weight: 600;
-}
-
-/* ====== 双栏 ====== */
-.workspace {
-  display: grid; grid-template-columns: 1fr; gap: 0.75rem;
-}
-@media (min-width: 768px) {
-  .workspace { grid-template-columns: 1fr 1fr; align-items: stretch; }
-}
-
-.panel {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: 0.5rem;
-  padding: 0.875rem;
-  display: flex; flex-direction: column; gap: 0.625rem;
-}
-
-.section-label {
-  font-size: 0.6875rem; font-weight: 700;
-  color: var(--text-secondary);
-  text-transform: uppercase; letter-spacing: 0.04em;
-}
+.heading-icon { --tool-color: #3b82f6; }
 
 /* --- 输入 --- */
-.panel-left textarea {
-  width: 100%; padding: 0.625rem 0.75rem;
-  border: 1px solid var(--border-color); border-radius: 0.375rem;
-  background: var(--bg-elevated); color: var(--text-primary);
-  font-size: 0.9375rem; font-family: inherit; line-height: 1.6;
-  resize: vertical; outline: none; box-sizing: border-box;
-}
 .panel-left textarea:focus { border-color: var(--brand-500); }
 
 .now-row { display: flex; gap: 0.375rem; }
@@ -368,10 +321,10 @@ onUnmounted(() => {
   background: var(--bg-elevated);
 }
 .detected-label {
-  font-size: 0.6875rem; color: var(--text-secondary);
+  font-size: 0.8125rem; color: var(--text-secondary);
 }
 .detected-value {
-  font-size: 0.75rem; font-weight: 600; font-family: var(--font-family-mono, monospace);
+  font-size: 0.875rem; font-weight: 600; font-family: var(--font-family-mono, monospace);
   color: #047857;
 }
 .detected-value.invalid { color: #ef4444; }
@@ -390,13 +343,17 @@ onUnmounted(() => {
   transition: border-color 0.15s, background 0.15s;
 }
 .result-row:hover { border-color: var(--brand-500); }
+.result-row.selected {
+  border-color: var(--brand-500);
+  background: color-mix(in srgb, var(--brand-500) 8%, transparent);
+}
 
 .format-name {
-  font-size: 0.6875rem; font-weight: 700;
+  font-size: 0.8125rem; font-weight: 700;
   color: var(--text-primary);
 }
 .format-value {
-  font-size: 0.75rem; font-family: var(--font-family-mono, monospace);
+  font-size: 0.875rem; font-family: var(--font-family-mono, monospace);
   line-height: 1.5; word-break: break-all;
   color: var(--text-primary); overflow: hidden;
   text-overflow: ellipsis; white-space: nowrap;
@@ -408,32 +365,4 @@ onUnmounted(() => {
   color: var(--text-secondary); flex-shrink: 0;
 }
 .result-row:hover .copy-hint { opacity: 0.6; }
-
-/* --- 操作 --- */
-.actions {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
-}
-
-.btn {
-  min-height: 2.25rem; display: inline-flex; align-items: center; justify-content: center;
-  gap: 0.375rem; border: 0; border-radius: 0.375rem; padding: 0 0.875rem;
-  font-weight: 700; font-size: 0.8125rem; cursor: pointer;
-  transition: transform 0.15s, opacity 0.15s, background 0.15s;
-}
-.btn.primary { background: var(--brand-500); color: #fff; }
-.btn.secondary { background: var(--bg-elevated); color: var(--text-primary); }
-.btn:hover { transform: translateY(-1px); }
-.btn:disabled { cursor: not-allowed; opacity: 0.5; transform: none; }
-
-/* ====== Toast ====== */
-.toast {
-  position: fixed; left: 50%; bottom: 1.5rem; z-index: 1000;
-  transform: translateX(-50%); padding: 0.5rem 0.75rem; border-radius: 999px;
-  color: #fff; background: #18181b; box-shadow: var(--shadow-3);
-  font-size: 0.8125rem; font-weight: 700;
-}
-.toast.success { background: #10b981; }
-.toast.error { background: #ef4444; }
-.toast-enter-active, .toast-leave-active { transition: opacity 0.2s, transform 0.2s; }
-.toast-enter-from, .toast-leave-to { opacity: 0; transform: translate(-50%, 0.5rem); }
 </style>

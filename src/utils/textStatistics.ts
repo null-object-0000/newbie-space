@@ -8,13 +8,15 @@ export interface TextStats {
   charCount: number
   /** 字符数（不含空格） */
   charCountNoSpaces: number
-  /** 单词数 */
+  /** 单词数（英文单词，以空格分隔） */
   wordCount: number
+  /** 中文字数 */
+  chineseCount: number
   /** 行数 */
   lineCount: number
   /** 段落数（以空行分隔） */
   paragraphCount: number
-  /** 句子数（以 .!? 分隔） */
+  /** 句子数（以 .!?。！？ 分隔） */
   sentenceCount: number
   /** UTF-8 字节大小 (number) */
   byteSizeRaw: number
@@ -39,6 +41,13 @@ export function formatBytes(bytes: number): string {
   return `${formatted} ${units[i]}`
 }
 
+/** 统计中文字符数量 */
+function countChinese(text: string): number {
+  // 匹配 CJK 统一汉字范围（基本区 + 扩展A-G）
+  const matches = text.match(/[一-鿿㐀-䶿豈-﫿]/g)
+  return matches ? matches.length : 0
+}
+
 /** 统计文本各项指标 */
 export function getTextStats(text: string): TextStats {
   const trimmed = text.trim()
@@ -48,6 +57,7 @@ export function getTextStats(text: string): TextStats {
     charCount: text.length,
     charCountNoSpaces: text.replace(/\s/g, '').length,
     wordCount: trimmed === '' ? 0 : trimmed.split(/\s+/).length,
+    chineseCount: countChinese(text),
     lineCount: text === '' ? 0 : text.split(/\r\n|\r|\n/).length,
     paragraphCount: text === '' ? 0 : text.split(/\n\s*\n/).filter(p => p.trim() !== '').length,
     sentenceCount: trimmed === '' ? 0 : trimmed.split(/[.!?。！？]+/).filter(s => s.trim() !== '').length,

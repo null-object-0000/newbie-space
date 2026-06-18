@@ -19,7 +19,7 @@
           </div>
           <h3 class="card-title">{{ link.name }}</h3>
         </div>
-        <ExternalLink :size="14" class="card-external-icon" />
+        <ExternalLink v-if="!isInternalLink" :size="14" class="card-external-icon" />
       </div>
       <div class="card-content">
         <p class="card-desc" :class="{ 'card-desc-empty': !link.desc }">{{ link.desc || "No description available." }}</p>
@@ -138,6 +138,11 @@ let isMenuHovered = false
 
 const hasSublinks = computed(() => {
   return props.showSublinks && props.link.subLinks && props.link.subLinks.length > 0
+})
+
+// 内部链接（站内路由）不显示外链图标
+const isInternalLink = computed(() => {
+  return props.link.link.startsWith('/')
 })
 
 // 检测是否为移动端

@@ -11,6 +11,7 @@ export interface QRCodeOptions {
     light: string // 背景颜色
   }
   errorCorrectionLevel: ErrorCorrectionLevel
+  transparentBg?: boolean // 是否将背景色替换为透明
 }
 
 export interface QRCodeResult {
@@ -49,10 +50,43 @@ export async function generateQRCode(options: QRCodeOptions): Promise<QRCodeResu
     errorCorrectionLevel: options.errorCorrectionLevel
   })
 
+  // 透明背景后处理：将背景色像素替换为透明
+  if (options.transparentBg) {
+    const ctx = canvas.getContext('2d')!
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    const data = imageData.data
+    // 解析背景色为 RGBA
+    const bg = parseColor(options.color.light)
+    const tolerance = 10 // 颜色容差
+    for (let i = 0; i < data.length; i += 4) {
+      if (
+        Math.abs(data[i] - bg.r) < tolerance &&
+        Math.abs(data[i + 1] - bg.g) < tolerance &&
+        Math.abs(data[i + 2] - bg.b) < tolerance
+      ) {
+        data[i + 3] = 0 // alpha = 0 (transparent)
+      }
+    }
+    ctx.putImageData(imageData, 0, 0)
+  }
+
   const dataUrl = canvas.toDataURL('image/png')
 
   return {
     dataUrl,
     width: options.width
   }
+}
+
+/** 将 CSS 颜色字符串解析为 RGB */
+function parseColor(color: string): { r: number; g: number; b: number } {
+  const ctx = document.createElement('canvas').getContext('2d')!
+  ctx.fillStyle = color
+  const hex = ctx.fillStyle // 浏览器会标准化为 #rrggbb 格式
+  const match = hex.match(/^#([0-9a-f]{6})$/i)
+  if (match) {
+    const n = parseInt(match[1], 16)
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 }
+  }
+  return { r: 255, g: 255, b: 255 }
 }

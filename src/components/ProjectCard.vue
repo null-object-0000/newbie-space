@@ -142,7 +142,7 @@ const getTechColor = (tech: string) => {
   color: var(--text-primary);
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 700;
   text-decoration: none;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);

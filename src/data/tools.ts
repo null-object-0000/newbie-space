@@ -4,6 +4,8 @@ import { BarChart3, Clock, Container, Crop, Fingerprint, GitCompare, ImageOff, L
 /** 工具间流转的数据类型 */
 export type DataType = 'text' | 'image'
 
+export type ToolCategory = '图片处理' | '生成器' | '文本处理' | '编码转换'
+
 export interface ToolItem {
   id: string
   name: string
@@ -11,12 +13,16 @@ export interface ToolItem {
   path: string
   icon: Component
   tags: string[]
+  /** 工具分类（用于首页 Tab 筛选），未设置时取 tags[0] */
+  category?: ToolCategory
   /** 该工具接受的输入类型（可为多种） */
   inputType: DataType[]
   /** 该工具产生的输出类型 */
   outputType: DataType
   /** 图标颜色 */
   color?: string
+  /** 输出类型显示标签（覆盖默认映射），比如文本统计工具输出更适合叫"统计结果"而非"文本" */
+  outputLabel?: string
 }
 
 export const tools: ToolItem[] = [
@@ -60,6 +66,7 @@ export const tools: ToolItem[] = [
     path: '/tools/url-encoder',
     icon: Link2,
     tags: ['文本处理', '本地运行'],
+    category: '编码转换',
     inputType: ['text'],
     outputType: 'text',
     color: '#3b82f6'
@@ -104,6 +111,7 @@ export const tools: ToolItem[] = [
     path: '/tools/date-converter',
     icon: Clock,
     tags: ['文本处理', '本地运行'],
+    category: '编码转换',
     inputType: ['text'],
     outputType: 'text',
     color: '#3b82f6'
@@ -115,6 +123,7 @@ export const tools: ToolItem[] = [
     path: '/tools/color-converter',
     icon: Palette,
     tags: ['文本处理', '本地运行'],
+    category: '编码转换',
     inputType: ['text'],
     outputType: 'text',
     color: '#3b82f6'
@@ -122,7 +131,7 @@ export const tools: ToolItem[] = [
   {
     id: 'random-port',
     name: '随机端口生成',
-    desc: '在合法端口范围内随机生成端口号，支持按范围筛选（非特权、注册、动态、自定义）。',
+    desc: '在合法端口范围内随机生成端口号，支持按范围筛选（全部、非特权、注册、动态、自定义）。',
     path: '/tools/random-port',
     icon: Network,
     tags: ['生成器', '本地运行'],
@@ -139,6 +148,7 @@ export const tools: ToolItem[] = [
     tags: ['文本处理', '本地运行'],
     inputType: ['text'],
     outputType: 'text',
+    outputLabel: '分析结果',
     color: '#3b82f6'
   },
   {
@@ -150,6 +160,7 @@ export const tools: ToolItem[] = [
     tags: ['文本处理', '本地运行'],
     inputType: ['text'],
     outputType: 'text',
+    outputLabel: '分析结果',
     color: '#3b82f6'
   },
   {

@@ -372,7 +372,7 @@ watch(() => content.value, async () => {
 }
 
 .post-tag {
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 500;
   color: var(--brand-600, #2563eb);
   background: rgba(59, 130, 246, 0.1);

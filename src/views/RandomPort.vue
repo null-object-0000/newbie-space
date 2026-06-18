@@ -8,13 +8,13 @@
       <section class="tool-header">
         <div class="tool-heading">
           <div class="heading-icon"><Network :size="22" /></div>
-          <div><h1>随机端口生成</h1><p>在合法端口范围 (1–65535) 内随机生成，可注册端口及以下默认排除。</p></div>
+          <div><h1>随机端口生成</h1><p>在合法端口范围 (1–65535) 内随机生成，支持按端口范围筛选。</p></div>
         </div>
       </section>
 
       <div class="workspace">
         <div class="panel panel-left">
-          <label class="section-label">排除范围</label>
+          <label class="section-label">生成范围</label>
           <div class="preset-row">
             <button
               v-for="p in presets"
@@ -146,33 +146,14 @@ onUnmounted(() => { if (toastTimer) clearTimeout(toastTimer) })
 </script>
 
 <style scoped>
-.tool-page { min-height: 100vh; background: var(--bg-main); color: var(--text-primary); }
-.tool-main { width: 100%; max-width: 72rem; margin: 0 auto; padding: 5rem 1rem 2.5rem; }
-@media (min-width: 640px) { .tool-main { padding: 5.5rem 1.5rem 3rem; } }
-@media (min-width: 1024px) { .tool-main { padding: 5.5rem 2rem 3rem; } }
-
-.tool-topbar { margin-bottom: 0.75rem; }
-.back-link { display: inline-flex; align-items: center; gap: 0.375rem; color: var(--text-secondary); font-size: 0.8125rem; }
-.back-link:hover { color: var(--brand-500); }
-
-.tool-header { margin-bottom: 1.25rem; }
-.tool-heading { display: flex; align-items: center; gap: 0.75rem; }
-.heading-icon { width: 2.75rem; height: 2.75rem; display: flex; align-items: center; justify-content: center; border-radius: 0.75rem; color: #14b8a6; background: color-mix(in srgb, #14b8a6 14%, transparent); }
-.tool-heading h1 { font-size: 1.375rem; margin: 0; line-height: 1.1; }
-.tool-heading p { color: var(--text-secondary); font-size: 0.8125rem; margin: 0.125rem 0 0; }
-
-.workspace { display: grid; grid-template-columns: 1fr; gap: 1rem; }
-@media (min-width: 768px) { .workspace { grid-template-columns: 1fr 1fr; align-items: stretch; } }
-.panel { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 1rem; padding: 1.125rem; display: flex; flex-direction: column; gap: 1rem; }
-
-.section-label { color: var(--text-secondary); font-size: 0.75rem; font-weight: 700; }
+.heading-icon { --tool-color: #8b5cf6; }
 
 .preset-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.375rem; }
 .preset-btn {
   min-height: 2rem; padding: 0 0.5rem;
   border: 1px solid var(--border-color); border-radius: 0.5rem;
   background: var(--bg-elevated); color: var(--text-secondary);
-  font-size: 0.6875rem; font-weight: 600; cursor: pointer;
+  font-size: 0.8125rem; font-weight: 600; cursor: pointer;
   transition: all 0.15s; text-align: center;
 }
 .preset-btn.active { border-color: #14b8a6; color: #0f766e; background: color-mix(in srgb, #14b8a6 10%, transparent); }
@@ -191,21 +172,4 @@ onUnmounted(() => { if (toastTimer) clearTimeout(toastTimer) })
 .port-empty { font-size: 1rem; color: var(--text-secondary); }
 .port-number { font-size: 5rem; font-weight: 700; font-family: var(--font-family-mono, monospace); line-height: 1; color: #14b8a6; }
 .port-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-
-.btn {
-  min-height: 2.25rem; display: inline-flex; align-items: center; justify-content: center;
-  gap: 0.375rem; border: 0; border-radius: 0.625rem; padding: 0 0.875rem;
-  font-weight: 700; font-size: 0.8125rem; cursor: pointer;
-  transition: transform 0.15s, opacity 0.15s, background 0.15s;
-}
-.btn.primary { background: var(--brand-500); color: #fff; }
-.btn.secondary { background: var(--bg-elevated); color: var(--text-primary); }
-.btn:hover { transform: translateY(-1px); }
-.btn:disabled { cursor: not-allowed; opacity: 0.5; transform: none; }
-
-.toast { position: fixed; left: 50%; bottom: 1.5rem; z-index: 1000; transform: translateX(-50%); padding: 0.625rem 0.875rem; border-radius: 999px; color: #fff; background: #18181b; box-shadow: var(--shadow-3); font-size: 0.8125rem; font-weight: 700; }
-.toast.success { background: #10b981; }
-.toast.error { background: #ef4444; }
-.toast-enter-active, .toast-leave-active { transition: opacity 0.2s, transform 0.2s; }
-.toast-enter-from, .toast-leave-to { opacity: 0; transform: translate(-50%, 0.5rem); }
 </style>
