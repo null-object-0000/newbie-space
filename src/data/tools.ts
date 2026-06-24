@@ -1,10 +1,10 @@
 import type { Component } from 'vue'
-import { BarChart3, Clock, Container, Crop, Fingerprint, GitCompare, ImageOff, Link2, Network, Palette, QrCode, ScanLine, Shuffle } from 'lucide-vue-next'
+import { BarChart3, Clock, Container, Crop, Fingerprint, GitCompare, ImageOff, Link2, Network, Palette, QrCode, ScanLine, Send, Shuffle } from 'lucide-vue-next'
 
 /** 工具间流转的数据类型 */
 export type DataType = 'text' | 'image'
 
-export type ToolCategory = '图片处理' | '生成器' | '文本处理' | '编码转换'
+export type ToolCategory = '图片处理' | '生成器' | '文本处理' | '编码转换' | '网络开发'
 
 export interface ToolItem {
   id: string
@@ -26,6 +26,28 @@ export interface ToolItem {
 }
 
 export const tools: ToolItem[] = [
+  {
+    id: 'http-client',
+    name: 'HTTP 请求',
+    desc: '轻量级 API 调试工具，支持 GET / POST / PUT / PATCH / DELETE、查询参数、请求头和 JSON 请求体。',
+    path: '/tools/http-client',
+    icon: Send,
+    tags: ['网络开发', 'API', 'HTTP'],
+    inputType: ['text'],
+    outputType: 'text',
+    color: '#f97316'
+  },
+  {
+    id: 'ip-lookup',
+    name: 'IP 信息解析',
+    desc: '聚合多个公开 IP 数据服务，查询归属地、ASN、网络运营商、时区和经纬度等信息。',
+    path: '/tools/ip-lookup',
+    icon: Network,
+    tags: ['网络开发', 'IP', 'API'],
+    inputType: ['text'],
+    outputType: 'text',
+    color: '#06b6d4'
+  },
   {
     id: 'background-transparent',
     name: '背景透明化',
