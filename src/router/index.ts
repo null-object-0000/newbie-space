@@ -100,6 +100,16 @@ export const routes: RouteRecordRaw[] = [
     path: '/tools/docker-compose',
     name: 'docker-compose',
     component: () => import('@/views/DockerCompose.vue')
+  },
+  {
+    path: '/tools/http-client',
+    name: 'http-client',
+    component: () => import('@/views/HttpClient.vue')
+  },
+  {
+    path: '/tools/ip-lookup',
+    name: 'ip-lookup',
+    component: () => import('@/views/IpLookup.vue')
   }
 ]
 
@@ -123,7 +133,9 @@ export function getStaticRoutes(): string[] {
     '/tools/date-converter',
     '/tools/text-statistics',
     '/tools/text-diff',
-    '/tools/docker-compose'
+    '/tools/docker-compose',
+    '/tools/http-client',
+    '/tools/ip-lookup'
   ]
   
   // 添加所有博客文章路由

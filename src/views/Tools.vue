@@ -106,6 +106,7 @@ const tabs = computed(() => {
     { key: '生成器', label: '生成器', count: cats['生成器'] || 0 },
     { key: '文本处理', label: '文本处理', count: cats['文本处理'] || 0 },
     { key: '编码转换', label: '编码转换', count: cats['编码转换'] || 0 },
+    { key: '网络开发', label: '网络开发', count: cats['网络开发'] || 0 },
   ]
 })
 
