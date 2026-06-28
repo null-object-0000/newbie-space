@@ -1,5 +1,4 @@
 import type { RouteRecordRaw } from 'vue-router'
-import { posts } from '@/data/posts'
 
 export const routes: RouteRecordRaw[] = [
   {
@@ -110,38 +109,20 @@ export const routes: RouteRecordRaw[] = [
     path: '/tools/ip-lookup',
     name: 'ip-lookup',
     component: () => import('@/views/IpLookup.vue')
+  },
+  {
+    path: '/tools/port-check',
+    name: 'port-check',
+    component: () => import('@/views/PortCheck.vue')
+  },
+  {
+    path: '/tools/file-handle-check',
+    name: 'file-handle-check',
+    component: () => import('@/views/FileHandleCheck.vue')
+  },
+  {
+    path: '/tools/process-manager',
+    name: 'process-manager',
+    component: () => import('@/views/ProcessManager.vue')
   }
 ]
-
-// 为 SSG 生成所有博客文章的静态路由
-export function getStaticRoutes(): string[] {
-  const staticRoutes = [
-    '/',
-    '/nav/',
-    '/posts',
-    '/projects',
-    '/tools',
-    '/tools/background-transparent',
-    '/tools/image-resize',
-    '/tools/qrcode-gen',
-    '/tools/qrcode-decode',
-    '/tools/url-encoder',
-    '/tools/hash-text',
-    '/tools/format-convert',
-    '/tools/color-converter',
-    '/tools/random-port',
-    '/tools/date-converter',
-    '/tools/text-statistics',
-    '/tools/text-diff',
-    '/tools/docker-compose',
-    '/tools/http-client',
-    '/tools/ip-lookup'
-  ]
-  
-  // 添加所有博客文章路由
-  for (const post of posts) {
-    staticRoutes.push(`/posts/${post.slug}`)
-  }
-  
-  return staticRoutes
-}

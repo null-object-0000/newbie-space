@@ -1,4 +1,5 @@
 import { onMounted, ref, computed, type Ref, type ComputedRef } from 'vue'
+import { useRouter } from 'vue-router'
 import { type ToolItem } from '@/data/tools'
 import {
   findTool,
@@ -66,6 +67,8 @@ export function usePipeline(options: UsePipelineOptions): UsePipelineReturn {
 
   const downstreamTools = computed(() => getDownstreamTools(toolId))
 
+  const router = useRouter()
+
   // --- 入站检测（onMounted 时自动执行）---
   onMounted(async () => {
     const incoming = checkIncoming()
@@ -114,7 +117,7 @@ export function usePipeline(options: UsePipelineOptions): UsePipelineReturn {
 
     if (ok) {
       setTimeout(() => {
-        window.location.href = targetTool.path
+        router.push(targetTool.path)
       }, 300)
       return { ok: true, message: `已发送至「${targetTool.name}」，即将跳转` }
     }
@@ -133,7 +136,7 @@ export function usePipeline(options: UsePipelineOptions): UsePipelineReturn {
 
     if (ok) {
       setTimeout(() => {
-        window.location.href = targetTool.path
+        router.push(targetTool.path)
       }, 300)
       return { ok: true, message: `已发送至「${targetTool.name}」，即将跳转` }
     }

@@ -1,5 +1,5 @@
 import type { Component } from 'vue'
-import { BarChart3, Clock, Container, Crop, Fingerprint, GitCompare, ImageOff, Link2, Network, Palette, QrCode, ScanLine, Send, Shuffle } from 'lucide-vue-next'
+import { Activity, AlertTriangle, BarChart3, Braces, Clock, Container, Crop, FileImage, FileSearch, Fingerprint, GitCompare, Hash, Image, ImageOff, Link2, Network, Palette, QrCode, ScanLine, Send, Shuffle } from 'lucide-vue-next'
 
 /** 工具间流转的数据类型 */
 export type DataType = 'text' | 'image'
@@ -195,5 +195,38 @@ export const tools: ToolItem[] = [
     inputType: ['text'],
     outputType: 'text',
     color: '#3b82f6'
+  },
+  {
+    id: 'port-check',
+    name: '端口检测',
+    desc: '检测指定端口是否开放（TCP 连接测试），基于 Tauri 系统级网络接口。',
+    path: '/tools/port-check',
+    icon: Network,
+    tags: ['网络开发', '系统工具', '本地运行'],
+    inputType: [],
+    outputType: 'text',
+    color: '#3b82f6'
+  },
+  {
+    id: 'file-handle-check',
+    name: '文件句柄查看',
+    desc: '按 PID 查询进程打开的文件句柄列表（Linux/macOS 支持完整路径，Windows 有限支持）。',
+    path: '/tools/file-handle-check',
+    icon: FileSearch,
+    tags: ['系统工具', '本地运行'],
+    inputType: [],
+    outputType: 'text',
+    color: '#f59e0b'
+  },
+  {
+    id: 'process-manager',
+    name: '进程管理',
+    desc: '查看系统进程列表（CPU、内存、状态），支持搜索和终止进程操作。',
+    path: '/tools/process-manager',
+    icon: Activity,
+    tags: ['系统工具', '本地运行'],
+    inputType: [],
+    outputType: 'text',
+    color: '#ef4444'
   }
 ]
