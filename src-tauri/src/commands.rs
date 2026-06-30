@@ -87,9 +87,7 @@ pub fn check_port(port: u16) -> PortCheckResult {
 
 #[tauri::command]
 pub fn find_port_process(port: u16) -> Vec<PortProcessInfo> {
-    use netstat2::{
-        get_sockets_info, AddressFamilyFlags, ProtocolFlags, ProtocolSocketInfo,
-    };
+    use netstat2::{get_sockets_info, AddressFamilyFlags, ProtocolFlags, ProtocolSocketInfo};
 
     let af = AddressFamilyFlags::IPV4 | AddressFamilyFlags::IPV6;
     let pf = ProtocolFlags::TCP | ProtocolFlags::UDP;
@@ -110,13 +108,11 @@ pub fn find_port_process(port: u16) -> Vec<PortProcessInfo> {
     for si in &sockets {
         let (local_port, protocol, local_addr) = match &si.protocol_socket_info {
             ProtocolSocketInfo::Tcp(tcp) => {
-                let addr =
-                    format!("{}:{}", tcp.local_addr, tcp.local_port);
+                let addr = format!("{}:{}", tcp.local_addr, tcp.local_port);
                 (tcp.local_port, "TCP".to_string(), addr)
             }
             ProtocolSocketInfo::Udp(udp) => {
-                let addr =
-                    format!("{}:{}", udp.local_addr, udp.local_port);
+                let addr = format!("{}:{}", udp.local_addr, udp.local_port);
                 (udp.local_port, "UDP".to_string(), addr)
             }
         };
@@ -268,17 +264,17 @@ pub fn check_file_usage(path: String) -> Vec<FileUsageInfo> {
         {
             use windows::core::PCWSTR;
             use windows::Win32::System::RestartManager::{
-                RmEndSession, RmGetList, RmRegisterResources, RmStartSession,
-                RM_PROCESS_INFO,
+                RmEndSession, RmGetList, RmRegisterResources, RmStartSession, RM_PROCESS_INFO,
             };
 
             let mut session_handle: u32 = 0;
-            let mut session_key_buf = vec![0u16; (windows::Win32::System::RestartManager::CCH_RM_SESSION_KEY + 1) as usize];
+            let mut session_key_buf = vec![
+                0u16;
+                (windows::Win32::System::RestartManager::CCH_RM_SESSION_KEY + 1)
+                    as usize
+            ];
 
-            let path_wide: Vec<u16> = path
-                .encode_utf16()
-                .chain(std::iter::once(0))
-                .collect();
+            let path_wide: Vec<u16> = path.encode_utf16().chain(std::iter::once(0)).collect();
 
             unsafe {
                 let result = RmStartSession(
@@ -291,30 +287,20 @@ pub fn check_file_usage(path: String) -> Vec<FileUsageInfo> {
                     let wide_path = PCWSTR::from_raw(path_wide.as_ptr());
                     let filenames = [wide_path];
 
-                    if RmRegisterResources(
-                        session_handle,
-                        Some(&filenames),
-                        None,
-                        None,
-                    )
-                    .is_ok()
-                    {
+                    if RmRegisterResources(session_handle, Some(&filenames), None, None).is_ok() {
                         let mut needed: u32 = 0;
                         let mut count: u32 = 0;
                         let mut reason: u32 = 0;
 
                         // 第一次调用获取所需的缓冲区大小
-                        let _ = RmGetList(
-                            session_handle,
-                            &mut needed,
-                            &mut count,
-                            None,
-                            &mut reason,
-                        );
+                        let _ =
+                            RmGetList(session_handle, &mut needed, &mut count, None, &mut reason);
 
                         if needed > 0 {
-                            let num_procs = needed as usize / std::mem::size_of::<RM_PROCESS_INFO>();
-                            let mut proc_info_buf: Vec<RM_PROCESS_INFO> = vec![RM_PROCESS_INFO::default(); num_procs];
+                            let num_procs =
+                                needed as usize / std::mem::size_of::<RM_PROCESS_INFO>();
+                            let mut proc_info_buf: Vec<RM_PROCESS_INFO> =
+                                vec![RM_PROCESS_INFO::default(); num_procs];
 
                             if RmGetList(
                                 session_handle,
@@ -328,12 +314,20 @@ pub fn check_file_usage(path: String) -> Vec<FileUsageInfo> {
                                 let mut seen_pids = std::collections::HashSet::new();
                                 for info in proc_info_buf.iter().take(count as usize) {
                                     let pid = info.Process.dwProcessId;
-                                    if pid == 0 || pid == 4 { continue; } // 跳过 Idle 和 System
-                                    if !seen_pids.insert(pid) { continue; }
+                                    if pid == 0 || pid == 4 {
+                                        continue;
+                                    } // 跳过 Idle 和 System
+                                    if !seen_pids.insert(pid) {
+                                        continue;
+                                    }
 
                                     // 从 strAppName ([u16; 256]) 中提取进程名
                                     let app_name: String = String::from_utf16_lossy(
-                                        &info.strAppName[..info.strAppName.iter().position(|&c| c == 0).unwrap_or(256)]
+                                        &info.strAppName[..info
+                                            .strAppName
+                                            .iter()
+                                            .position(|&c| c == 0)
+                                            .unwrap_or(256)],
                                     );
 
                                     let process_name = system
