@@ -49,6 +49,22 @@
               <span class="status-text">{{ result.is_open ? '端口开放' : '端口关闭' }}</span>
             </div>
             <div class="result-message">{{ result.message }}</div>
+
+            <!-- 占用进程列表 -->
+            <div v-if="processes.length" class="process-section">
+              <div class="section-label process-section-title">占用进程</div>
+              <div v-for="p in processes" :key="`${p.pid}-${p.protocol}`" class="process-row">
+                <span class="proto-badge" :class="p.protocol.toLowerCase()">{{ p.protocol }}</span>
+                <router-link :to="'/tools/process-manager'" class="process-link">
+                  <span class="process-name">{{ p.process_name }}</span>
+                  <span class="process-pid">PID {{ p.pid }}</span>
+                </router-link>
+                <code class="process-addr">{{ p.local_addr }}</code>
+              </div>
+            </div>
+            <div v-else-if="!checkingProc" class="process-none">
+              <span>未检测到占用进程</span>
+            </div>
           </div>
         </div>
       </div>
@@ -72,12 +88,21 @@ interface PortCheckResult {
   message: string
 }
 
+interface PortProcessItem {
+  pid: number
+  process_name: string
+  protocol: string
+  local_addr: string
+}
+
 const { isDark } = useTheme()
 const tool = findTool('port-check')
 
 const port = ref<number | null>(null)
 const checking = ref(false)
 const result = ref<PortCheckResult | null>(null)
+const processes = ref<PortProcessItem[]>([])
+const checkingProc = ref(false)
 const toastMessage = ref('')
 const toastType = ref<'success' | 'error'>('success')
 let toastTimer: ReturnType<typeof setTimeout> | null = null
@@ -97,16 +122,30 @@ function pushHistory(p: number) {
 async function checkPort() {
   if (!valid.value || checking.value) return
   checking.value = true
+  checkingProc.value = true
   result.value = null
-  try {
-    const res = await invoke<PortCheckResult>('check_port', { port: port.value! })
-    result.value = res
-    pushHistory(port.value!)
-  } catch (e) {
-    showToast(`检测失败：${e}`, 'error')
-  } finally {
-    checking.value = false
+  processes.value = []
+
+  const [portRes, procRes] = await Promise.allSettled([
+    invoke<PortCheckResult>('check_port', { port: port.value! }),
+    invoke<PortProcessItem[]>('find_port_process', { port: port.value! })
+  ])
+
+  if (portRes.status === 'fulfilled') {
+    result.value = portRes.value
+  } else {
+    showToast(`端口检测失败：${portRes.reason}`, 'error')
   }
+
+  if (procRes.status === 'fulfilled') {
+    processes.value = procRes.value
+  } else {
+    // 静默处理 — 进程检测失败不影响端口检测结果
+  }
+
+  checkingProc.value = false
+  checking.value = false
+  pushHistory(port.value!)
 }
 
 function showToast(m: string, t: 'success' | 'error') {
@@ -140,12 +179,12 @@ onUnmounted(() => { if (toastTimer) clearTimeout(toastTimer) })
 }
 .history-chip:hover { border-color: var(--brand-500); color: var(--brand-500); }
 
-.result-panel { justify-content: center; align-items: center; gap: 1rem; }
+.result-panel { justify-content: flex-start; align-items: center; gap: 1rem; }
 .result-empty, .result-loading {
   display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
   color: var(--text-secondary); font-size: 0.875rem;
 }
-.result-body { text-align: center; }
+.result-body { width: 100%; text-align: center; }
 .result-status { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 0.5rem; }
 .status-dot { width: 0.75rem; height: 0.75rem; border-radius: 50%; }
 .result-status.open .status-dot { background: #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.4); }
@@ -154,6 +193,45 @@ onUnmounted(() => { if (toastTimer) clearTimeout(toastTimer) })
 .result-status.open .status-text { color: #10b981; }
 .result-status.closed .status-text { color: #ef4444; }
 .result-message { font-size: 0.8125rem; color: var(--text-secondary); word-break: break-all; }
+
+/* 占用进程 */
+.process-section {
+  margin-top: 1.25rem; padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+  text-align: left;
+}
+.process-section-title { margin-bottom: 0.5rem; }
+.process-row {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.4375rem 0; border-radius: 0.375rem;
+}
+.process-row + .process-row { border-top: 1px solid var(--border-color-subtle, var(--border-color)); }
+
+.proto-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 2rem; padding: 0.125rem 0.375rem; border-radius: 0.25rem;
+  font-size: 0.625rem; font-weight: 700; text-transform: uppercase;
+  font-family: var(--font-family-mono, monospace);
+}
+.proto-badge.tcp { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+.proto-badge.udp { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+
+.process-link {
+  display: flex; align-items: center; gap: 0.375rem;
+  text-decoration: none; color: var(--text-primary); flex: 1; min-width: 0;
+  transition: color 0.15s;
+}
+.process-link:hover { color: var(--brand-500); }
+.process-name { font-size: 0.8125rem; font-weight: 600; }
+.process-pid { font-size: 0.75rem; color: var(--text-secondary); font-family: var(--font-family-mono, monospace); }
+
+.process-addr {
+  font-family: var(--font-family-mono, monospace);
+  font-size: 0.6875rem; color: var(--text-secondary);
+  word-break: break-all; max-width: 160px;
+}
+
+.process-none { margin-top: 0.75rem; font-size: 0.75rem; color: var(--text-secondary); }
 
 .ip-row { display: flex; gap: 0.5rem; }
 

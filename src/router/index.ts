@@ -139,9 +139,9 @@ export const routes: RouteRecordRaw[] = [
       component: () => import('@/views/PortCheck.vue')
     },
     {
-      path: '/tools/file-handle-check',
-      name: 'file-handle-check',
-      component: () => import('@/views/FileHandleCheck.vue')
+      path: '/tools/file-usage-check',
+      name: 'file-usage-check',
+      component: () => import('@/views/FileUsageCheck.vue')
     },
     {
       path: '/tools/process-manager',

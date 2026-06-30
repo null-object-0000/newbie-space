@@ -1,5 +1,5 @@
 import type { Component } from 'vue'
-import { Activity, AlertTriangle, BarChart3, Braces, Clock, Container, Crop, FileImage, FileSearch, Fingerprint, GitCompare, Hash, Image, ImageOff, Link2, Network, Palette, QrCode, ScanLine, Send, Shuffle } from 'lucide-vue-next'
+import { Activity, AlertTriangle, BarChart3, Braces, Clock, Container, Crop, FileImage, FolderSearch, Fingerprint, GitCompare, Hash, Image, ImageOff, Link2, Network, Palette, QrCode, ScanLine, Send, Shuffle } from 'lucide-vue-next'
 import type { RuntimeTarget } from '@/utils/runtime'
 
 /** 工具间流转的数据类型 */
@@ -202,7 +202,7 @@ export const tools: ToolItem[] = [
   {
     id: 'port-check',
     name: '端口检测',
-    desc: '检测本机 localhost 指定端口是否开放（IPv4/IPv6 TCP 连接测试），基于 Tauri 系统级网络接口。',
+    desc: '检测本机指定端口是否开放，并显示占用该端口的进程信息。基于 Tauri 系统级网络接口。',
     path: '/tools/port-check',
     icon: Network,
     tags: ['网络开发', '系统工具', '本地运行'],
@@ -212,11 +212,11 @@ export const tools: ToolItem[] = [
     color: '#3b82f6'
   },
   {
-    id: 'file-handle-check',
-    name: '文件句柄查看',
-    desc: '按 PID 查询进程打开的文件句柄列表（Linux/macOS 支持完整路径，Windows 有限支持）。',
-    path: '/tools/file-handle-check',
-    icon: FileSearch,
+    id: 'file-usage-check',
+    name: '文件占用检测',
+    desc: '检测指定文件或目录被哪些进程占用，支持查看进程详情和终止占用进程。',
+    path: '/tools/file-usage-check',
+    icon: FolderSearch,
     tags: ['系统工具', '本地运行'],
     category: '系统工具',
     runtime: 'desktop',

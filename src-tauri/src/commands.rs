@@ -102,6 +102,9 @@ pub fn find_port_process(port: u16) -> Vec<PortProcessInfo> {
     let mut system = System::new_all();
     system.refresh_all();
 
+    use std::collections::HashSet;
+
+    let mut seen = HashSet::new();
     let mut results: Vec<PortProcessInfo> = Vec::new();
 
     for si in &sockets {
@@ -123,6 +126,17 @@ pub fn find_port_process(port: u16) -> Vec<PortProcessInfo> {
         }
 
         for &pid in &si.associated_pids {
+            // 跳过系统空闲进程 (PID 0) 和无效 PID
+            if pid == 0 {
+                continue;
+            }
+
+            // 按 (pid, protocol) 去重 — 一个端口可能被多个 socket 条目引用
+            let proto_clone = protocol.clone();
+            if !seen.insert((pid, proto_clone)) {
+                continue;
+            }
+
             let process_name = system
                 .process(Pid::from(pid as usize))
                 .map(|p| p.name().to_string_lossy().to_string())
@@ -249,91 +263,106 @@ pub fn check_file_usage(path: String) -> Vec<FileUsageInfo> {
 
     #[cfg(target_os = "windows")]
     {
-        // 使用 Windows Restart Manager API
-        // 注意：RM 只能检测已注册扩展名的文件，不适用于所有文件类型
+        // 使用 Windows Restart Manager API 检测文件占用
         #[cfg(windows)]
         {
+            use windows::core::PCWSTR;
             use windows::Win32::System::RestartManager::{
-                RmStartSession, RmRegisterResources, RmGetList, RmEndSession,
-                RM_SESSION_KEY,
+                RmEndSession, RmGetList, RmRegisterResources, RmStartSession,
+                RM_PROCESS_INFO,
             };
-            use windows::core::PWSTR;
 
             let mut session_handle: u32 = 0;
-            let mut session_key: [u16; 33] = [0; 33];
+            let mut session_key_buf = vec![0u16; (windows::Win32::System::RestartManager::CCH_RM_SESSION_KEY + 1) as usize];
 
-            // RmStartSession
             let path_wide: Vec<u16> = path
                 .encode_utf16()
                 .chain(std::iter::once(0))
                 .collect();
 
             unsafe {
-                if RmStartSession(
+                let result = RmStartSession(
                     &mut session_handle,
                     0,
-                    &mut session_key,
-                ).is_ok()
-                {
-                    let wide_paths = [PWSTR::from_raw(path_wide.as_ptr() as *mut _)];
+                    windows::core::PWSTR(session_key_buf.as_mut_ptr()),
+                );
+
+                if result.is_ok() {
+                    let wide_path = PCWSTR::from_raw(path_wide.as_ptr());
+                    let filenames = [wide_path];
 
                     if RmRegisterResources(
                         session_handle,
-                        &wide_paths,
-                        0,
+                        Some(&filenames),
                         None,
-                        0,
                         None,
-                    ).is_ok()
+                    )
+                    .is_ok()
                     {
                         let mut needed: u32 = 0;
                         let mut count: u32 = 0;
                         let mut reason: u32 = 0;
 
-                        // 第一次调用获取所需缓冲区大小
-                        if RmGetList(
+                        // 第一次调用获取所需的缓冲区大小
+                        let _ = RmGetList(
                             session_handle,
                             &mut needed,
                             &mut count,
                             None,
                             &mut reason,
-                        ).is_err()
-                            && needed > 0
-                        {
-                            let mut buf: Vec<u8> = vec![0; needed as usize];
+                        );
+
+                        if needed > 0 {
+                            let num_procs = needed as usize / std::mem::size_of::<RM_PROCESS_INFO>();
+                            let mut proc_info_buf: Vec<RM_PROCESS_INFO> = vec![RM_PROCESS_INFO::default(); num_procs];
+
                             if RmGetList(
                                 session_handle,
                                 &mut needed,
                                 &mut count,
-                                Some(buf.as_mut_ptr() as *mut _),
+                                Some(proc_info_buf.as_mut_ptr()),
                                 &mut reason,
-                            ).is_ok()
+                            )
+                            .is_ok()
                             {
-                                // RM_PROCESS_INFO 数组中提取 PID 和应用名
-                                let proc_info_slice = unsafe {
-                                    std::slice::from_raw_parts(
-                                        buf.as_ptr() as *const u8,
-                                        needed as usize,
-                                    )
-                                };
-                                // 简单解析：RM_PROCESS_INFO 是一个变长结构体
-                                // 由于直接解析较复杂，这里返回检测到占用但不解析具体进程
-                                // 真正需要详细进程信息时，可以结合 sysinfo 枚举所有进程
+                                let mut seen_pids = std::collections::HashSet::new();
+                                for info in proc_info_buf.iter().take(count as usize) {
+                                    let pid = info.Process.dwProcessId;
+                                    if pid == 0 || pid == 4 { continue; } // 跳过 Idle 和 System
+                                    if !seen_pids.insert(pid) { continue; }
+
+                                    // 从 strAppName ([u16; 256]) 中提取进程名
+                                    let app_name: String = String::from_utf16_lossy(
+                                        &info.strAppName[..info.strAppName.iter().position(|&c| c == 0).unwrap_or(256)]
+                                    );
+
+                                    let process_name = system
+                                        .process(Pid::from(pid as usize))
+                                        .map(|p| p.name().to_string_lossy().to_string())
+                                        .unwrap_or(app_name);
+
+                                    results.push(FileUsageInfo {
+                                        pid,
+                                        process_name,
+                                        file_path: path.clone(),
+                                    });
+                                }
                             }
                         }
                     }
-                    RmEndSession(session_handle);
+
+                    let _ = RmEndSession(session_handle);
                 }
             }
         }
 
-        // 如果 RM 没有返回结果，使用 netstat-like 方式作为补充说明
+        // Restart Manager 只能检测已注册扩展名的应用，如果没结果就提示
         if results.is_empty() {
             results.push(FileUsageInfo {
                 pid: 0,
-                process_name: "Windows".to_string(),
+                process_name: "".to_string(),
                 file_path: format!(
-                    "文件占用检测在 Windows 上有限支持。请使用 Resource Monitor 或 handle.exe (Sysinternals) 手动检查：{}",
+                    "未找到占用该文件的进程。提示：Windows Restart Manager 只能检测已注册文件扩展名的应用程序。\n路径：{}",
                     path
                 ),
             });
