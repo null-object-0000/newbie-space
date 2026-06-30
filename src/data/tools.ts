@@ -1,10 +1,11 @@
 import type { Component } from 'vue'
-import { Activity, AlertTriangle, BarChart3, Braces, Braces, Clock, Container, Crop, FileImage, FileImage, FileSearch, Fingerprint, GitCompare, Hash, Image, Hash, Image, ImageOff, Link2, Network, Palette, QrCode, ScanLine, Send, Shuffle } from 'lucide-vue-next'
+import { Activity, AlertTriangle, BarChart3, Braces, Clock, Container, Crop, FileImage, FileSearch, Fingerprint, GitCompare, Hash, Image, ImageOff, Link2, Network, Palette, QrCode, ScanLine, Send, Shuffle } from 'lucide-vue-next'
+import type { RuntimeTarget } from '@/utils/runtime'
 
 /** 工具间流转的数据类型 */
 export type DataType = 'text' | 'image'
 
-export type ToolCategory = '图片处理' | '生成器' | '文本处理' | '编码转换' | '网络开发'
+export type ToolCategory = '图片处理' | '生成器' | '文本处理' | '编码转换' | '网络开发' | '系统工具'
 
 export interface ToolItem {
   id: string
@@ -15,6 +16,8 @@ export interface ToolItem {
   tags: string[]
   /** 工具分类（用于首页 Tab 筛选），未设置时取 tags[0] */
   category?: ToolCategory
+  /** 工具可用运行时，默认 Web/桌面都可用 */
+  runtime?: RuntimeTarget
   /** 该工具接受的输入类型（可为多种） */
   inputType: DataType[]
   /** 该工具产生的输出类型 */
@@ -199,10 +202,11 @@ export const tools: ToolItem[] = [
   {
     id: 'port-check',
     name: '端口检测',
-    desc: '检测指定端口是否开放（TCP 连接测试），基于 Tauri 系统级网络接口。',
+    desc: '检测本机 localhost 指定端口是否开放（IPv4/IPv6 TCP 连接测试），基于 Tauri 系统级网络接口。',
     path: '/tools/port-check',
     icon: Network,
     tags: ['网络开发', '系统工具', '本地运行'],
+    runtime: 'desktop',
     inputType: [],
     outputType: 'text',
     color: '#3b82f6'
@@ -214,6 +218,8 @@ export const tools: ToolItem[] = [
     path: '/tools/file-handle-check',
     icon: FileSearch,
     tags: ['系统工具', '本地运行'],
+    category: '系统工具',
+    runtime: 'desktop',
     inputType: [],
     outputType: 'text',
     color: '#f59e0b'
@@ -225,6 +231,8 @@ export const tools: ToolItem[] = [
     path: '/tools/process-manager',
     icon: Activity,
     tags: ['系统工具', '本地运行'],
+    category: '系统工具',
+    runtime: 'desktop',
     inputType: [],
     outputType: 'text',
     color: '#ef4444'

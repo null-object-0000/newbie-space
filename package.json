@@ -4,7 +4,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "dev:desktop:frontend": "vite --mode desktop",
+    "dev:desktop": "bun run tauri -- dev",
+    "build": "bun run build:web && bun run build:desktop",
+    "prepare:build": "bun run generate-timestamps && bun run generate-stars",
+    "check:desktop": "node scripts/check-tauri-prereqs.js",
+    "build:web": "bun run prepare:build && vite-ssg build && node scripts/restructure-html.js && node scripts/fix-asset-paths.js && node scripts/create-404.js",
+    "build:desktop:frontend": "bun run prepare:build && vite build --mode desktop --base=./",
+    "build:desktop": "bun run check:desktop && node scripts/build-tauri.js",
     "preview": "vite preview",
     "tauri": "tauri",
     "add-nav": "node scripts/add-nav.js",
@@ -15,6 +22,7 @@
     "@fontsource/noto-sans-sc": "^5.2.9",
     "@fontsource/outfit": "^5.2.8",
     "@giscus/vue": "^3.1.1",
+    "@tauri-apps/api": "^2.11.1",
     "axios": "^1.18.1",
     "colord": "^2.9.3",
     "highlight.js": "^11.11.1",
@@ -25,6 +33,7 @@
     "vue-router": "^5.1.0"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4",
     "@types/highlight.js": "^10.1.0",
     "@types/markdown-it": "^14.1.2",
     "@types/markdown-it-container": "^4.0.0",
@@ -37,6 +46,7 @@
     "markdown-it-container": "^4.0.0",
     "typescript": "^6.0.3",
     "vite": "^8.1.0",
+    "vite-ssg": "^28.3.0",
     "vue-tsc": "^3.3.5"
   }
 }

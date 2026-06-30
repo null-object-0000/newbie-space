@@ -2,12 +2,12 @@
   "$schema": "https://raw.githubusercontent.com/nichabric/tauri/dev/crates/tauri-cli/schema.json",
   "productName": "Newbie Space",
   "version": "1.0.0",
-  "identifier": "com.newbie-space.app",
+  "identifier": "com.newbie-space.desktop",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
-    "beforeDevCommand": "bun run dev",
-    "beforeBuildCommand": "bun run build"
+    "beforeDevCommand": "bun run dev:desktop:frontend",
+    "beforeBuildCommand": "bun run build:desktop:frontend"
   },
   "app": {
     "windows": [

@@ -1,5 +1,6 @@
 import type { RouteRecordRaw } from 'vue-router'
 import { posts } from '@/data/posts'
+import { isDesktopApp } from '@/utils/runtime'
 
 export const routes: RouteRecordRaw[] = [
   {
@@ -131,21 +132,23 @@ export const routes: RouteRecordRaw[] = [
     name: 'json-formatter',
     component: () => import('@/views/JsonFormatter.vue')
   },
-  {
-    path: '/tools/port-check',
-    name: 'port-check',
-    component: () => import('@/views/PortCheck.vue')
-  },
-  {
-    path: '/tools/file-handle-check',
-    name: 'file-handle-check',
-    component: () => import('@/views/FileHandleCheck.vue')
-  },
-  {
-    path: '/tools/process-manager',
-    name: 'process-manager',
-    component: () => import('@/views/ProcessManager.vue')
-  }
+  ...(isDesktopApp() ? [
+    {
+      path: '/tools/port-check',
+      name: 'port-check',
+      component: () => import('@/views/PortCheck.vue')
+    },
+    {
+      path: '/tools/file-handle-check',
+      name: 'file-handle-check',
+      component: () => import('@/views/FileHandleCheck.vue')
+    },
+    {
+      path: '/tools/process-manager',
+      name: 'process-manager',
+      component: () => import('@/views/ProcessManager.vue')
+    }
+  ] : [])
 ]
 
 // 为 SSG 生成所有博客文章的静态路由

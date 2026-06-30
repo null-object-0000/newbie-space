@@ -1,6 +1,6 @@
 mod commands;
 
-use commands::{check_port, check_file_handles, kill_process, list_processes};
+use commands::{check_file_handles, check_port, kill_process, list_processes};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
