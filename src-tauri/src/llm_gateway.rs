@@ -1,3 +1,6 @@
+use crate::desktop_settings::{
+    load_desktop_settings, pull_json_from_s3, push_json_to_s3, S3SyncResult,
+};
 use axum::{
     body::{Body, Bytes},
     extract::State,
@@ -274,17 +277,28 @@ impl LlmGatewayState {
 }
 
 #[tauri::command]
-pub fn get_llm_gateway_config(
+pub async fn get_llm_gateway_config(
     app: tauri::AppHandle,
     state: tauri::State<'_, LlmGatewayState>,
 ) -> Result<GatewayConfig, String> {
-    let config = load_config_from_disk(&app)?;
+    let settings = load_desktop_settings(&app).unwrap_or_default();
+    let config = if settings.s3_sync.enabled && settings.s3_sync.auto_pull_on_start {
+        match pull_gateway_config_from_s3(&settings.s3_sync).await {
+            Ok(config) => {
+                save_config_to_disk(&app, &config)?;
+                config
+            }
+            Err(_) => load_config_from_disk(&app)?,
+        }
+    } else {
+        load_config_from_disk(&app)?
+    };
     *state.config.write().map_err(|e| e.to_string())? = config.clone();
     Ok(config)
 }
 
 #[tauri::command]
-pub fn save_llm_gateway_config(
+pub async fn save_llm_gateway_config(
     app: tauri::AppHandle,
     state: tauri::State<'_, LlmGatewayState>,
     config: GatewayConfig,
@@ -294,11 +308,41 @@ pub fn save_llm_gateway_config(
     }
     validate_config(&config)?;
     save_config_to_disk(&app, &config)?;
-    *state.config.write().map_err(|e| e.to_string())? = config;
+    *state.config.write().map_err(|e| e.to_string())? = config.clone();
     state.key_cursors.lock().map_err(|e| e.to_string())?.clear();
+
+    let settings = load_desktop_settings(&app).unwrap_or_default();
+    if settings.s3_sync.enabled && settings.s3_sync.auto_push_on_save {
+        push_gateway_config_to_s3(&settings.s3_sync, &config).await?;
+    }
     Ok(())
 }
 
+#[tauri::command]
+pub async fn pull_llm_gateway_config_from_s3(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, LlmGatewayState>,
+) -> Result<GatewayConfig, String> {
+    if state.is_running() {
+        return Err("请先停止本地 LLM API 服务，再从 S3 拉取配置".to_string());
+    }
+    let settings = load_desktop_settings(&app)?;
+    let config = pull_gateway_config_from_s3(&settings.s3_sync).await?;
+    save_config_to_disk(&app, &config)?;
+    *state.config.write().map_err(|e| e.to_string())? = config.clone();
+    state.key_cursors.lock().map_err(|e| e.to_string())?.clear();
+    Ok(config)
+}
+
+#[tauri::command]
+pub async fn push_llm_gateway_config_to_s3(
+    app: tauri::AppHandle,
+    config: GatewayConfig,
+) -> Result<S3SyncResult, String> {
+    validate_config(&config)?;
+    let settings = load_desktop_settings(&app)?;
+    push_gateway_config_to_s3(&settings.s3_sync, &config).await
+}
 #[tauri::command]
 pub async fn start_llm_gateway(
     state: tauri::State<'_, LlmGatewayState>,
@@ -593,6 +637,23 @@ pub fn delete_llm_gateway_profile(app: tauri::AppHandle, name: String) -> Result
         }
     }
     Ok(())
+}
+async fn pull_gateway_config_from_s3(
+    sync: &crate::desktop_settings::S3SyncConfig,
+) -> Result<GatewayConfig, String> {
+    let value = pull_json_from_s3(sync).await?;
+    let config: GatewayConfig =
+        serde_json::from_value(value).map_err(|e| format!("S3 配置结构无效：{}", e))?;
+    validate_config(&config)?;
+    Ok(config)
+}
+
+async fn push_gateway_config_to_s3(
+    sync: &crate::desktop_settings::S3SyncConfig,
+    config: &GatewayConfig,
+) -> Result<S3SyncResult, String> {
+    let value = serde_json::to_value(config).map_err(|e| format!("序列化配置失败：{}", e))?;
+    push_json_to_s3(sync, &value).await
 }
 async fn health() -> Json<Value> {
     Json(json!({ "status": "ok" }))

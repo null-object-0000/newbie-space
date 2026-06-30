@@ -4,6 +4,7 @@ import { ViteSSG } from 'vite-ssg'
 import App from './App.vue'
 import { routes, getStaticRoutes } from './router'
 import { isDesktopApp } from './utils/runtime'
+import { invoke } from '@tauri-apps/api/core'
 
 // 本地字体（避免 Google Fonts CDN 在中国大陆的访问问题）
 import '@fontsource/outfit/400.css'
@@ -39,7 +40,18 @@ if (isDesktopApp()) {
   const app = createVueApp(App)
   app.use(router)
   registerGlobalComponents(app)
-  app.mount('#app')
+
+  invoke<{ startup_path?: string }>('get_desktop_settings')
+    .then(settings => {
+      const startupPath = settings.startup_path || '/'
+      if (startupPath && startupPath !== router.currentRoute.value.path) {
+        return router.replace(startupPath)
+      }
+    })
+    .catch(() => undefined)
+    .finally(() => {
+      app.mount('#app')
+    })
 }
 
 export const createApp = ViteSSG(

@@ -1,13 +1,15 @@
 mod commands;
+mod desktop_settings;
 mod llm_gateway;
 
 use commands::{check_file_usage, check_port, find_port_process, kill_process, list_processes};
+use desktop_settings::{get_desktop_settings, save_desktop_settings};
 use llm_gateway::{
     clear_llm_gateway_logs, delete_llm_gateway_profile, discover_llm_gateway_models,
     get_llm_gateway_config, get_llm_gateway_status, get_llm_gateway_usage, list_llm_gateway_logs,
-    list_llm_gateway_profiles, load_llm_gateway_profile, save_llm_gateway_config,
-    save_llm_gateway_profile, start_llm_gateway, stop_llm_gateway, test_llm_gateway_config,
-    LlmGatewayState,
+    list_llm_gateway_profiles, load_llm_gateway_profile, pull_llm_gateway_config_from_s3,
+    push_llm_gateway_config_to_s3, save_llm_gateway_config, save_llm_gateway_profile,
+    start_llm_gateway, stop_llm_gateway, test_llm_gateway_config, LlmGatewayState,
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -20,6 +22,8 @@ pub fn run() {
             check_file_usage,
             list_processes,
             kill_process,
+            get_desktop_settings,
+            save_desktop_settings,
             get_llm_gateway_config,
             save_llm_gateway_config,
             start_llm_gateway,
@@ -34,6 +38,8 @@ pub fn run() {
             save_llm_gateway_profile,
             load_llm_gateway_profile,
             delete_llm_gateway_profile,
+            pull_llm_gateway_config_from_s3,
+            push_llm_gateway_config_to_s3,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

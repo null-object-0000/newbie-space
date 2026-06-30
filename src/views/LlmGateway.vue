@@ -73,6 +73,42 @@
             </div>
           </div>
 
+          <div class="sync-box">
+            <div class="section-title">
+              <label class="section-label">桌面与同步</label>
+              <button class="btn compact" :disabled="busy" @click="saveDesktopSettings">保存设置</button>
+            </div>
+            <div class="form-grid two">
+              <label class="field">
+                <span>启动后打开</span>
+                <select v-model="desktopSettings.startup_path">
+                  <option v-for="page in startupPages" :key="page.path" :value="page.path">{{ page.name }}</option>
+                </select>
+              </label>
+              <label class="toggle sync-toggle"><input v-model="desktopSettings.s3_sync.enabled" type="checkbox" />启用 S3 同步</label>
+            </div>
+            <div class="form-grid two">
+              <label class="field"><span>Endpoint</span><input v-model.trim="desktopSettings.s3_sync.endpoint" placeholder="https://s3.example.com" /></label>
+              <label class="field"><span>Region</span><input v-model.trim="desktopSettings.s3_sync.region" placeholder="auto" /></label>
+            </div>
+            <div class="form-grid two">
+              <label class="field"><span>Bucket</span><input v-model.trim="desktopSettings.s3_sync.bucket" /></label>
+              <label class="field"><span>Object Key</span><input v-model.trim="desktopSettings.s3_sync.object_key" /></label>
+            </div>
+            <div class="form-grid two">
+              <label class="field"><span>Access Key</span><input v-model.trim="desktopSettings.s3_sync.access_key_id" /></label>
+              <label class="field"><span>Secret Key</span><input v-model="desktopSettings.s3_sync.secret_access_key" type="password" /></label>
+            </div>
+            <div class="sync-options">
+              <label class="toggle"><input v-model="desktopSettings.s3_sync.path_style" type="checkbox" />Path-style URL</label>
+              <label class="toggle"><input v-model="desktopSettings.s3_sync.auto_pull_on_start" type="checkbox" />启动时自动拉取</label>
+              <label class="toggle"><input v-model="desktopSettings.s3_sync.auto_push_on_save" type="checkbox" />保存配置后自动上传</label>
+            </div>
+            <div class="button-row">
+              <button class="btn" :disabled="busy || status.running || !desktopSettings.s3_sync.enabled" @click="pullConfigFromS3">从 S3 拉取配置</button>
+              <button class="btn" :disabled="busy || !desktopSettings.s3_sync.enabled" @click="pushConfigToS3">上传配置到 S3</button>
+            </div>
+          </div>
           <fieldset class="config-form" :disabled="status.running">
             <div class="section-title">
               <label class="section-label">监听设置</label>
@@ -337,6 +373,24 @@ interface ConfigProfile {
   updated_at: string | null
 }
 
+interface DesktopSettings {
+  startup_path: string
+  s3_sync: S3SyncConfig
+}
+
+interface S3SyncConfig {
+  enabled: boolean
+  endpoint: string
+  region: string
+  bucket: string
+  object_key: string
+  access_key_id: string
+  secret_access_key: string
+  path_style: boolean
+  auto_pull_on_start: boolean
+  auto_push_on_save: boolean
+}
+
 interface GatewayStatus {
   running: boolean
   listen_url: string
@@ -398,6 +452,19 @@ const testResults = ref<ChannelTestResult[]>([])
 const profiles = ref<ConfigProfile[]>([])
 const selectedProfile = ref('')
 const profileName = ref('default')
+const desktopSettings = ref<DesktopSettings>(createDefaultDesktopSettings())
+const startupPages = [
+  { path: '/', name: '首页' },
+  { path: '/nav/', name: '导航' },
+  { path: '/posts', name: '文章' },
+  { path: '/projects', name: '项目' },
+  { path: '/tools', name: '工具中心' },
+  { path: '/tools/llm-gateway', name: 'LLM API 网关' },
+  { path: '/tools/http-client', name: 'HTTP 客户端' },
+  { path: '/tools/json-formatter', name: 'JSON 格式化' },
+  { path: '/tools/port-check', name: '端口检测' },
+  { path: '/tools/process-manager', name: '进程管理' }
+]
 const status = ref<GatewayStatus>({
   running: false,
   listen_url: '',
@@ -420,6 +487,34 @@ const toastType = ref<'success' | 'error'>('success')
 let toastTimer: ReturnType<typeof setTimeout> | null = null
 let refreshTimer: ReturnType<typeof setInterval> | null = null
 
+function createDefaultDesktopSettings(): DesktopSettings {
+  return {
+    startup_path: '/tools/llm-gateway',
+    s3_sync: {
+      enabled: false,
+      endpoint: '',
+      region: 'auto',
+      bucket: '',
+      object_key: 'newbie-space/llm-gateway.json',
+      access_key_id: '',
+      secret_access_key: '',
+      path_style: true,
+      auto_pull_on_start: false,
+      auto_push_on_save: false
+    }
+  }
+}
+
+function normalizeDesktopSettings(value: DesktopSettings): DesktopSettings {
+  const defaults = createDefaultDesktopSettings()
+  return {
+    startup_path: value.startup_path || defaults.startup_path,
+    s3_sync: {
+      ...defaults.s3_sync,
+      ...(value.s3_sync || {})
+    }
+  }
+}
 function createDefaultConfig(): GatewayConfig {
   return {
     listen_host: '127.0.0.1',
@@ -497,6 +592,52 @@ async function refreshAll() {
   }
 }
 
+async function loadDesktopSettings() {
+  const settings = await invoke<DesktopSettings>('get_desktop_settings')
+  desktopSettings.value = normalizeDesktopSettings(settings)
+}
+
+async function saveDesktopSettings() {
+  busy.value = true
+  try {
+    await invoke('save_desktop_settings', { settings: desktopSettings.value })
+    showToast('桌面与同步设置已保存', 'success')
+  } catch (e) {
+    showToast(`保存设置失败：${e}`, 'error')
+  } finally {
+    busy.value = false
+  }
+}
+
+async function pullConfigFromS3() {
+  busy.value = true
+  try {
+    await saveDesktopSettings()
+    const nextConfig = await invoke<GatewayConfig>('pull_llm_gateway_config_from_s3')
+    config.value = normalizeConfig(nextConfig)
+    syncConfigText()
+    await refreshAll()
+    showToast('已从 S3 拉取配置', 'success')
+  } catch (e) {
+    showToast(`S3 拉取失败：${e}`, 'error')
+  } finally {
+    busy.value = false
+  }
+}
+
+async function pushConfigToS3() {
+  busy.value = true
+  try {
+    await saveDesktopSettings()
+    syncConfigText()
+    await invoke('push_llm_gateway_config_to_s3', { config: config.value })
+    showToast('配置已上传到 S3', 'success')
+  } catch (e) {
+    showToast(`S3 上传失败：${e}`, 'error')
+  } finally {
+    busy.value = false
+  }
+}
 async function loadConfig() {
   const nextConfig = await invoke<GatewayConfig>('get_llm_gateway_config')
   config.value = normalizeConfig(nextConfig)
@@ -793,6 +934,7 @@ function showToast(m: string, t: 'success' | 'error') {
 
 onMounted(async () => {
   try {
+    await loadDesktopSettings()
     await loadConfig()
     await loadProfiles()
     await refreshAll()
@@ -832,7 +974,8 @@ onUnmounted(() => {
   flex-wrap: wrap;
 }
 
-.profile-box {
+.profile-box,
+.sync-box {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -843,10 +986,20 @@ onUnmounted(() => {
 }
 
 .profile-row,
-.mini-actions {
+.mini-actions,
+.sync-options {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.sync-options {
+  flex-wrap: wrap;
+}
+
+.sync-toggle {
+  align-self: end;
+  min-height: 2.25rem;
 }
 
 .profile-row select,
