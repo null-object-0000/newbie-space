@@ -15,8 +15,8 @@
             <Send :size="22" />
           </div>
           <div>
-            <h1>HTTP 请求</h1>
-            <p>轻量级 API 调试工具，请求由浏览器直接发出，不经过本站服务器。</p>
+            <h1>{{ tool?.name }}</h1>
+            <p>{{ tool?.desc }}</p>
           </div>
         </div>
         <div class="header-meta">
@@ -361,6 +361,7 @@ import {
 } from 'lucide-vue-next'
 import { useTheme } from '@/composables/useTheme'
 import KeyValueEditor from '@/components/tools/KeyValueEditor.vue'
+import { findTool } from '@/utils/toolPipeline'
 import {
   generateCurlCommand,
   generateJavaScriptCode,
@@ -386,6 +387,7 @@ interface HistoryItem {
 }
 
 const { isDark } = useTheme()
+const tool = findTool('http-client')
 const methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']
 
 // --- Request state ---
