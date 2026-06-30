@@ -119,6 +119,16 @@ pub struct UsageSummary {
     pub estimated_cost: f64,
 }
 
+#[derive(Clone, Debug, Serialize)]
+pub struct ChannelTestResult {
+    pub channel_id: String,
+    pub channel_name: String,
+    pub ok: bool,
+    pub status: Option<u16>,
+    pub latency_ms: u128,
+    pub message: String,
+    pub models: Vec<String>,
+}
 #[derive(Default)]
 struct ServerHandle {
     shutdown: Option<oneshot::Sender<()>>,
@@ -302,6 +312,80 @@ pub fn clear_llm_gateway_logs(state: tauri::State<'_, LlmGatewayState>) -> Resul
     Ok(())
 }
 
+#[tauri::command]
+pub async fn test_llm_gateway_config(
+    config: GatewayConfig,
+) -> Result<Vec<ChannelTestResult>, String> {
+    validate_config(&config)?;
+    let client = Client::new();
+    let mut results = Vec::new();
+
+    for channel in config.channels.iter().filter(|channel| channel.enabled) {
+        let started = std::time::Instant::now();
+        let endpoint = format!("{}/v1/models", channel.base_url.trim_end_matches('/'));
+        let api_key = match channel
+            .keys
+            .iter()
+            .find(|key| key.enabled && !key.api_key.trim().is_empty())
+        {
+            Some(key) => key.api_key.trim(),
+            None => {
+                results.push(ChannelTestResult {
+                    channel_id: channel.id.clone(),
+                    channel_name: channel.name.clone(),
+                    ok: false,
+                    status: None,
+                    latency_ms: started.elapsed().as_millis(),
+                    message: "没有可用 API Key".to_string(),
+                    models: Vec::new(),
+                });
+                continue;
+            }
+        };
+
+        let response = client
+            .get(&endpoint)
+            .timeout(Duration::from_millis(channel.timeout_ms.max(1000)))
+            .bearer_auth(api_key)
+            .send()
+            .await;
+
+        match response {
+            Ok(response) => {
+                let status = response.status().as_u16();
+                let body = response.json::<Value>().await.unwrap_or(Value::Null);
+                let models = extract_model_ids(&body);
+                results.push(ChannelTestResult {
+                    channel_id: channel.id.clone(),
+                    channel_name: channel.name.clone(),
+                    ok: (200..300).contains(&status),
+                    status: Some(status),
+                    latency_ms: started.elapsed().as_millis(),
+                    message: if (200..300).contains(&status) {
+                        format!("连接成功，发现 {} 个模型", models.len())
+                    } else {
+                        extract_error_message(&body)
+                            .unwrap_or_else(|| format!("上游返回 HTTP {}", status))
+                    },
+                    models,
+                });
+            }
+            Err(err) => {
+                results.push(ChannelTestResult {
+                    channel_id: channel.id.clone(),
+                    channel_name: channel.name.clone(),
+                    ok: false,
+                    status: None,
+                    latency_ms: started.elapsed().as_millis(),
+                    message: err.to_string(),
+                    models: Vec::new(),
+                });
+            }
+        }
+    }
+
+    Ok(results)
+}
 async fn health() -> Json<Value> {
     Json(json!({ "status": "ok" }))
 }
@@ -384,7 +468,7 @@ async fn chat_completions(
                 total_tokens: 0,
                 estimated_cost: 0.0,
                 error: Some("没有可用的模型映射或渠道".to_string()),
-                input: payload,
+                input: sanitize_payload_for_log(&payload),
                 output: None,
             },
         );
@@ -439,8 +523,8 @@ async fn chat_completions(
                         total_tokens: usage.2,
                         estimated_cost: cost,
                         error: None,
-                        input: payload.clone(),
-                        output: Some(upstream.body.clone()),
+                        input: sanitize_payload_for_log(&payload),
+                        output: Some(sanitize_payload_for_log(&upstream.body)),
                     },
                 );
                 return json_response(
@@ -473,7 +557,7 @@ async fn chat_completions(
             total_tokens: 0,
             estimated_cost: 0.0,
             error: Some(last_error.clone()),
-            input: payload,
+            input: sanitize_payload_for_log(&payload),
             output: None,
         },
     );
@@ -593,11 +677,75 @@ fn extract_usage(body: &Value) -> (u64, u64, u64) {
     (prompt, completion, total)
 }
 
+fn extract_model_ids(body: &Value) -> Vec<String> {
+    let mut models: Vec<String> = body
+        .get("data")
+        .and_then(Value::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|item| item.get("id").and_then(Value::as_str))
+                .map(ToString::to_string)
+                .collect()
+        })
+        .unwrap_or_default();
+    models.sort();
+    models.dedup();
+    models
+}
+
+fn extract_error_message(body: &Value) -> Option<String> {
+    body.get("error")
+        .and_then(|error| error.get("message").or_else(|| error.get("code")))
+        .and_then(Value::as_str)
+        .map(ToString::to_string)
+}
 fn estimate_cost(route: &ModelRouteConfig, prompt_tokens: u64, completion_tokens: u64) -> f64 {
     (prompt_tokens as f64 / 1000.0 * route.prompt_cost_per_1k)
         + (completion_tokens as f64 / 1000.0 * route.completion_cost_per_1k)
 }
 
+fn sanitize_payload_for_log(value: &Value) -> Value {
+    match value {
+        Value::Object(map) => {
+            let mut sanitized = serde_json::Map::new();
+            for (key, value) in map {
+                let lower = key.to_lowercase();
+                if matches!(
+                    lower.as_str(),
+                    "api_key" | "authorization" | "access_token" | "refresh_token"
+                ) {
+                    sanitized.insert(key.clone(), Value::String("[redacted]".to_string()));
+                } else if matches!(lower.as_str(), "messages" | "input" | "prompt" | "choices") {
+                    sanitized.insert(key.clone(), summarize_sensitive_value(value));
+                } else {
+                    sanitized.insert(key.clone(), sanitize_payload_for_log(value));
+                }
+            }
+            Value::Object(sanitized)
+        }
+        Value::Array(items) => Value::Array(items.iter().map(sanitize_payload_for_log).collect()),
+        _ => value.clone(),
+    }
+}
+
+fn summarize_sensitive_value(value: &Value) -> Value {
+    match value {
+        Value::Array(items) => json!({
+            "redacted": true,
+            "items": items.len()
+        }),
+        Value::String(text) => json!({
+            "redacted": true,
+            "chars": text.chars().count()
+        }),
+        Value::Object(map) => json!({
+            "redacted": true,
+            "fields": map.len()
+        }),
+        _ => Value::String("[redacted]".to_string()),
+    }
+}
 fn append_log(state: &GatewayHttpState, log: RequestLog) {
     if let Ok(mut logs) = state.logs.lock() {
         logs.push(log);

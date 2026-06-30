@@ -74,6 +74,10 @@
               <FileJson :size="16" />
               示例
             </button>
+            <button class="btn" :disabled="busy" @click="testConfig">
+              <FlaskConical :size="16" />
+              测试渠道
+            </button>
           </div>
         </div>
 
@@ -100,6 +104,23 @@
               <strong>{{ usage.total_tokens }}</strong>
             </div>
           </div>
+
+          <div v-if="testResults.length" class="test-results">
+            <label class="section-label">渠道测试</label>
+            <div v-for="result in testResults" :key="result.channel_id" class="test-row" :class="{ ok: result.ok }">
+              <div class="test-main">
+                <strong>{{ result.channel_name }}</strong>
+                <span>{{ result.status ? `HTTP ${result.status}` : '未连接' }}</span>
+                <span>{{ result.latency_ms }}ms</span>
+              </div>
+              <div class="test-message">{{ result.message }}</div>
+              <div v-if="result.models.length" class="model-list">
+                <span v-for="model in result.models.slice(0, 12)" :key="model">{{ model }}</span>
+                <span v-if="result.models.length > 12">+{{ result.models.length - 12 }}</span>
+              </div>
+            </div>
+          </div>
+
 
           <div class="log-header">
             <label class="section-label">请求日志</label>
@@ -150,6 +171,7 @@ import {
   Bot,
   FileJson,
   FileText,
+  FlaskConical,
   Play,
   RefreshCw,
   Save,
@@ -191,6 +213,15 @@ interface RequestLog {
   estimated_cost: number
   error: string | null
 }
+interface ChannelTestResult {
+  channel_id: string
+  channel_name: string
+  ok: boolean
+  status: number | null
+  latency_ms: number
+  message: string
+  models: string[]
+}
 
 const { isDark } = useTheme()
 const tool = findTool('llm-gateway')
@@ -198,6 +229,7 @@ const tool = findTool('llm-gateway')
 const busy = ref(false)
 const configText = ref('')
 const logs = ref<RequestLog[]>([])
+const testResults = ref<ChannelTestResult[]>([])
 const status = ref<GatewayStatus>({
   running: false,
   listen_url: '',
@@ -289,23 +321,37 @@ async function clearLogs() {
   }
 }
 
+async function testConfig() {
+  busy.value = true
+  try {
+    const config = JSON.parse(configText.value)
+    testResults.value = await invoke<ChannelTestResult[]>('test_llm_gateway_config', { config })
+    const okCount = testResults.value.filter(result => result.ok).length
+    showToast(`测试完成：${okCount}/${testResults.value.length} 个渠道可用`, okCount ? 'success' : 'error')
+  } catch (e) {
+    showToast(`测试失败：${e}`, 'error')
+  } finally {
+    busy.value = false
+  }
+}
+
 function loadExample() {
   configText.value = JSON.stringify({
     listen_host: '127.0.0.1',
     listen_port: 11434,
     channels: [
       {
-        id: 'deepseek-main',
-        name: 'DeepSeek 主渠道',
-        base_url: 'https://api.deepseek.com',
+        id: 'work-friday',
+        name: 'Work Friday',
+        base_url: 'https://work-friday.nichangen.com',
         enabled: true,
         priority: 1,
         key_strategy: 'round_robin',
         timeout_ms: 60000,
         keys: [
           {
-            id: 'deepseek-key-1',
-            name: '主 key',
+            id: 'work-friday-key-1',
+            name: '测试 key',
             api_key: 'sk-xxx',
             enabled: true,
             weight: 1
@@ -313,9 +359,9 @@ function loadExample() {
         ]
       },
       {
-        id: 'openrouter-backup',
-        name: 'OpenRouter 备用',
-        base_url: 'https://openrouter.ai/api',
+        id: 'work-friday-flash',
+        name: 'Work Friday Flash',
+        base_url: 'https://work-friday.nichangen.com',
         enabled: false,
         priority: 2,
         key_strategy: 'random',
@@ -327,8 +373,8 @@ function loadExample() {
       {
         id: 'deepseek-v4-pro-main',
         public_model: 'deepseek-v4-pro',
-        upstream_model: 'aaaa',
-        channel_id: 'deepseek-main',
+        upstream_model: 'deepseek-v4-pro',
+        channel_id: 'work-friday',
         enabled: true,
         priority: 1,
         prompt_cost_per_1k: 0,
@@ -337,8 +383,8 @@ function loadExample() {
       {
         id: 'deepseek-v4-pro-backup',
         public_model: 'deepseek-v4-pro',
-        upstream_model: 'deepseek/deepseek-chat',
-        channel_id: 'openrouter-backup',
+        upstream_model: 'deepseek-v4-flash',
+        channel_id: 'work-friday',
         enabled: true,
         priority: 2,
         prompt_cost_per_1k: 0,
@@ -384,6 +430,56 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.625rem;
+}
+
+.test-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.test-row {
+  padding: 0.625rem;
+  border: 1px solid color-mix(in srgb, #ef4444 45%, var(--border-color));
+  border-radius: 0.5rem;
+  background: var(--bg-elevated);
+}
+
+.test-row.ok {
+  border-color: color-mix(in srgb, #10b981 55%, var(--border-color));
+}
+
+.test-main,
+.model-list {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.test-main {
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+}
+
+.test-message {
+  margin-top: 0.375rem;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.model-list {
+  margin-top: 0.5rem;
+}
+
+.model-list span {
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.375rem;
+  background: var(--bg-muted);
+  color: var(--text-secondary);
+  font-family: var(--font-family-mono, monospace);
+  font-size: 0.6875rem;
 }
 
 .service-row {
@@ -485,6 +581,7 @@ onUnmounted(() => {
 .config-editor:focus {
   border-color: var(--brand-500);
 }
+
 
 .log-header {
   justify-content: space-between;
