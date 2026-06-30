@@ -145,6 +145,11 @@ export const routes: RouteRecordRaw[] = [
     path: '/tools/process-manager',
     name: 'process-manager',
     component: () => import('@/views/ProcessManager.vue')
+  },
+  {
+    path: '/tools/llm-gateway',
+    name: 'llm-gateway',
+    component: () => import('@/views/LlmGateway.vue')
   }
 ]
 

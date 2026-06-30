@@ -98,8 +98,7 @@ pub fn check_file_handles(pid: u32) -> Vec<FileHandleInfo> {
         results.push(FileHandleInfo {
             pid,
             process_name,
-            file_path: "[Windows 文件句柄枚举需要额外 API 调用，暂未支持]"
-                .to_string(),
+            file_path: "[Windows 文件句柄枚举需要额外 API 调用，暂未支持]".to_string(),
         });
     }
 
