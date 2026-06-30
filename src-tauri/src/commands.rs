@@ -374,7 +374,9 @@ pub fn check_file_usage(path: String) -> Vec<FileUsageInfo> {
         results.push(FileUsageInfo {
             pid: 0,
             process_name: "".to_string(),
-            file_path: "未找到占用该文件/目录的进程".to_string(),`r`n        });`r`n    }
+            file_path: "未找到占用该文件/目录的进程".to_string(),
+        });
+    }
 
     results
 }

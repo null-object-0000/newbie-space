@@ -14,6 +14,11 @@ const getBase = () => {
 export default defineConfig({
   base: getBase(),
   plugins: [vue()],
+  server: {
+    watch: {
+      ignored: ['**/src-tauri/target/**']
+    }
+  },
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src')

@@ -17,7 +17,8 @@ use std::{
     sync::{Arc, Mutex, RwLock},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
-use tokio::{net::TcpListener, sync::oneshot, task::JoinHandle};
+use tauri::async_runtime::JoinHandle;
+use tokio::{net::TcpListener, sync::oneshot};
 use uuid::Uuid;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
