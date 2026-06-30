@@ -570,6 +570,19 @@ function importCurl() {
     bodyType.value = parsed.bodyType
     activeTab.value = 'body'
   }
+  if (parsed.bodyType === 'form-data' && parsed.formFields?.length) {
+    body.value = ''
+    bodyType.value = 'form-data'
+    formFields.value = parsed.formFields.map(f => ({
+      enabled: true,
+      key: f.key,
+      value: f.value,
+      type: f.type,
+      file: null,
+    }))
+    formFields.value.push({ enabled: true, key: '', value: '', type: 'text', file: null })
+    activeTab.value = 'body'
+  }
   // Detect auth
   const authHeader = parsed.headers.find(h => h.key.toLowerCase() === 'authorization')
   if (authHeader) {
@@ -651,8 +664,9 @@ async function sendRequest() {
         }
         init.body = fd
         // Let fetch set Content-Type with boundary, but remove manual Content-Type if present
-        delete reqHeaders['Content-Type']
-        delete reqHeaders['content-type']
+        for (const key of Object.keys(reqHeaders)) {
+          if (key.toLowerCase() === 'content-type') delete reqHeaders[key]
+        }
         init.headers = reqHeaders
       }
     } else if (bodyType.value === 'form-urlencoded' && body.value) {

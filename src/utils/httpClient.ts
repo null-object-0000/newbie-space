@@ -13,6 +13,10 @@ export interface CodeGenParams {
   formFields?: CodeGenFormField[]
 }
 
+function escapePythonString(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+}
+
 function escapeShellSingleQuote(s: string): string {
   return s.replace(/'/g, "'\\''")
 }
@@ -75,13 +79,13 @@ export function generatePythonCode(p: CodeGenParams): string {
   if (p.bodyType === 'form-data' && p.formFields?.length) {
     const fileFields = p.formFields.filter(f => f.type === 'file')
     const textFields = p.formFields.filter(f => f.type === 'text')
-    if (fileFields.length) {
-      const fieldLines = textFields.map(f => `    '${f.key.replace(/'/g, "\\'")}': '${f.value.replace(/'/g, "\\'")}'`).join(',\n')
-      const fileLines = fileFields.map(f => `    '${f.key.replace(/'/g, "\\'")}': open('/path/to/file', 'rb')`).join(',\n')
-      lines.push(`files = {\n${fieldLines}${fieldLines && fileLines ? ',\n' : ''}${fileLines}\n}`)
-    } else if (textFields.length) {
-      const fieldLines = textFields.map(f => `    '${f.key.replace(/'/g, "\\'")}': '${f.value.replace(/'/g, "\\'")}'`).join(',\n')
+    if (textFields.length) {
+      const fieldLines = textFields.map(f => `    '${escapePythonString(f.key)}': '${escapePythonString(f.value)}'`).join(',\n')
       lines.push(`data = {\n${fieldLines}\n}`)
+    }
+    if (fileFields.length) {
+      const fileLines = fileFields.map(f => `    '${escapePythonString(f.key)}': open('/path/to/file', 'rb')`).join(',\n')
+      lines.push(`files = {\n${fileLines}\n}`)
     }
   } else if (p.bodyType === 'form-urlencoded' && p.body) {
     const kvLines = p.body.split('&').map(pair => {
@@ -97,10 +101,13 @@ export function generatePythonCode(p: CodeGenParams): string {
 
   const args: string[] = ['url']
   if (p.headers.length) args.push('headers=headers')
-  if (p.body) {
-    if (p.bodyType === 'form-data' && p.formFields?.some(f => f.type === 'file')) {
+  if (p.bodyType === 'form-data' && p.formFields?.length) {
+    if (p.formFields.some(f => f.type === 'text')) args.push('data=data')
+    if (p.formFields.some(f => f.type === 'file')) {
       args.push('files=files')
-    } else if (p.bodyType === 'form-data' || p.bodyType === 'form-urlencoded') {
+    }
+  } else if (p.body) {
+    if (p.bodyType === 'form-urlencoded') {
       args.push('data=data')
     } else {
       args.push('data=body')
@@ -174,9 +181,15 @@ export function generateGoCode(p: CodeGenParams): string {
     '  "net/http"',
   ]
 
-  if (p.bodyType === 'form-data' && p.formFields?.some(f => f.type === 'file')) {
+  const hasFormData = p.bodyType === 'form-data' && Boolean(p.formFields?.length)
+  const hasFormDataFile = p.bodyType === 'form-data' && Boolean(p.formFields?.some(f => f.type === 'file'))
+
+  if (hasFormData) {
     lines.push('  "bytes"')
     lines.push('  "mime/multipart"')
+  }
+
+  if (hasFormDataFile) {
     lines.push('  "os"')
   } else if (p.body) {
     lines.push('  "strings"')
@@ -193,25 +206,20 @@ export function generateGoCode(p: CodeGenParams): string {
 
   // body / NewRequest
   if (p.bodyType === 'form-data' && p.formFields?.length) {
-    const hasFile = p.formFields.some(f => f.type === 'file')
-    if (hasFile) {
-      lines.push('  bodyBuf := new(bytes.Buffer)')
-      lines.push('  writer := multipart.NewWriter(bodyBuf)')
-      for (const f of p.formFields) {
-        if (f.type === 'file') {
-          lines.push(`  file, _ := os.Open("/path/to/file")`)
-          lines.push(`  part, _ := writer.CreateFormFile("${f.key.replace(/"/g, '\\"')}", "filename")`)
-          lines.push('  io.Copy(part, file)')
-          lines.push('  file.Close()')
-        } else {
-          lines.push(`  writer.WriteField("${f.key.replace(/"/g, '\\"')}", "${f.value.replace(/"/g, '\\"')}")`)
-        }
+    lines.push('  bodyBuf := new(bytes.Buffer)')
+    lines.push('  writer := multipart.NewWriter(bodyBuf)')
+    for (const f of p.formFields) {
+      if (f.type === 'file') {
+        lines.push(`  file, _ := os.Open("/path/to/file")`)
+        lines.push(`  part, _ := writer.CreateFormFile("${f.key.replace(/"/g, '\\"')}", "filename")`)
+        lines.push('  io.Copy(part, file)')
+        lines.push('  file.Close()')
+      } else {
+        lines.push(`  writer.WriteField("${f.key.replace(/"/g, '\\"')}", "${f.value.replace(/"/g, '\\"')}")`)
       }
-      lines.push('  writer.Close()')
-      lines.push(`  req, err := http.NewRequest("${p.method}", urlStr, bodyBuf)`)
-    } else {
-      lines.push(`  req, err := http.NewRequest("${p.method}", urlStr, nil)`)
     }
+    lines.push('  writer.Close()')
+    lines.push(`  req, err := http.NewRequest("${p.method}", urlStr, bodyBuf)`)
   } else if (p.bodyType === 'form-urlencoded' && p.body) {
     const formValues = p.body.split('&').map(pair => {
       const [k, v] = pair.split('=')
@@ -242,7 +250,7 @@ export function generateGoCode(p: CodeGenParams): string {
     lines.push(`  req.Header.Set("${h.key.replace(/"/g, '\\"')}", "${h.value.replace(/"/g, '\\"')}")`)
   }
 
-  if (p.bodyType === 'form-data' && p.formFields?.some(f => f.type === 'file')) {
+  if (p.bodyType === 'form-data' && p.formFields?.length) {
     lines.push(`  req.Header.Set("Content-Type", writer.FormDataContentType())`)
   } else if (p.bodyType === 'form-urlencoded' && p.body) {
     lines.push(`  req.Header.Set("Content-Type", "application/x-www-form-urlencoded")`)
@@ -275,6 +283,7 @@ export interface ParsedCurl {
   headers: Array<{ key: string; value: string }>
   body: string
   bodyType: 'json' | 'text' | 'form-urlencoded' | 'form-data'
+  formFields?: CodeGenFormField[]
 }
 
 export function parseCurlCommand(curlText: string): ParsedCurl | null {
@@ -289,6 +298,7 @@ export function parseCurlCommand(curlText: string): ParsedCurl | null {
       headers: [],
       body: '',
       bodyType: 'text',
+      formFields: [],
     }
 
     // Tokenize respecting single-quoted strings
@@ -296,7 +306,7 @@ export function parseCurlCommand(curlText: string): ParsedCurl | null {
     let i = 0
     while (i < body.length) {
       // Skip whitespace and line continuations
-      if (body[i] === ' ' || body[i] === '\t') { i++; continue }
+      if (body[i] === ' ' || body[i] === '\t' || body[i] === '\n' || body[i] === '\r') { i++; continue }
       if (body[i] === '\\') {
         // Skip backslash-newline continuations
         i++
@@ -336,7 +346,7 @@ export function parseCurlCommand(curlText: string): ParsedCurl | null {
         tokens.push(str)
       } else {
         let tok = ''
-        while (i < body.length && body[i] !== ' ' && body[i] !== '\t') {
+        while (i < body.length && body[i] !== ' ' && body[i] !== '\t' && body[i] !== '\n' && body[i] !== '\r') {
           tok += body[i]
           i++
         }
@@ -368,11 +378,29 @@ export function parseCurlCommand(curlText: string): ParsedCurl | null {
       if (t === '-d' || t === '--data' || t === '--data-raw' || t === '--data-binary') {
         const data = tokens[++ti] || ''
         result.body = data
+        if (result.method === 'GET') result.method = 'POST'
         // Detect body type
         if (data.trim().startsWith('{') || data.trim().startsWith('[')) {
           result.bodyType = 'json'
         } else if (data.includes('=') && !data.includes(' ')) {
           result.bodyType = 'form-urlencoded'
+        }
+        continue
+      }
+
+      if (t === '-F' || t === '--form' || t === '--form-string') {
+        const field = tokens[++ti] || ''
+        const equalsIdx = field.indexOf('=')
+        if (equalsIdx >= 0) {
+          const key = field.slice(0, equalsIdx)
+          const value = field.slice(equalsIdx + 1)
+          result.formFields!.push({
+            key,
+            value: value.startsWith('@') ? value.slice(1) : value,
+            type: value.startsWith('@') && t !== '--form-string' ? 'file' : 'text',
+          })
+          result.bodyType = 'form-data'
+          if (result.method === 'GET') result.method = 'POST'
         }
         continue
       }
@@ -385,6 +413,7 @@ export function parseCurlCommand(curlText: string): ParsedCurl | null {
     }
 
     if (!result.url) return null
+    if (!result.formFields?.length) delete result.formFields
 
     return result
   } catch {
