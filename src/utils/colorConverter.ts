@@ -1,4 +1,7 @@
-import { colord, type RgbColor, type HslColor, type HsvColor } from 'colord'
+import { colord, extend, type RgbColor, type HslColor, type HsvColor } from 'colord'
+import namesPlugin from 'colord/plugins/names'
+
+extend([namesPlugin])
 
 export interface ColorResult {
   label: string
@@ -138,7 +141,7 @@ export function convertColor(input: string): { hex: string; results: ColorResult
   const lab = rgbToLab(rgba.r, rgba.g, rgba.b)
   const lch = rgbToLch(rgba.r, rgba.g, rgba.b)
   const xyz = rgbToXyz(rgba.r, rgba.g, rgba.b)
-  const name = HEX_TO_NAME[hex] || ''
+  const name = c.toName({ closest: true }) || HEX_TO_NAME[hex] || ''
 
   return {
     hex,

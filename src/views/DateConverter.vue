@@ -260,6 +260,7 @@ function clearInput() {
   parsedDate.value = null
   detectedFormat.value = ''
   dateValid.value = false
+  selectedFormat.value = ''
 }
 
 async function copyFormat(fmt: { name: string; result: string }) {

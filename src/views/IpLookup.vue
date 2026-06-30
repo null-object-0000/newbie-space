@@ -3,10 +3,10 @@
     <AppHeader />
     <main class="tool-main">
       <div class="tool-topbar"><router-link to="/tools" class="back-link"><ArrowLeft :size="16" />工具中心</router-link></div>
-      <section class="tool-header"><div class="tool-heading"><div class="heading-icon"><Network :size="22" /></div><div><h1>IP 信息解析</h1><p>从多个公开数据源查询 IP 的网络和地理信息；结果仅供参考。</p></div></div></section>
+      <section class="tool-header"><div class="tool-heading"><div class="heading-icon"><Network :size="22" /></div><div><h1>{{ tool?.name }}</h1><p>{{ tool?.desc }}</p></div></div></section>
 
       <section class="lookup-box">
-        <div class="lookup-row"><input v-model.trim="ip" placeholder="输入 IPv4 或 IPv6；留空查询当前公网 IP" @keyup.enter="lookup" /><select v-model="selectedProvider"><option value="all">聚合查询（推荐）</option><option v-for="provider in providers" :key="provider.id" :value="provider.id">{{ provider.name }}</option></select><button class="btn primary" :disabled="loading" @click="lookup"><LoaderCircle v-if="loading" class="spin" :size="16" /><Search v-else :size="16" />{{ loading ? '查询中' : '查询' }}</button><button class="refresh-btn" :disabled="loading" title="忽略缓存并重新请求" @click="lookup(true)"><RefreshCw :size="16" />刷新</button></div>
+        <div class="lookup-row"><input v-model.trim="ip" placeholder="输入 IPv4 或 IPv6；留空查询当前公网 IP" @keyup.enter="lookup()" /><select v-model="selectedProvider"><option value="all">聚合查询（推荐）</option><option v-for="provider in providers" :key="provider.id" :value="provider.id">{{ provider.name }}</option></select><button class="btn primary" :disabled="loading" @click="lookup()"><LoaderCircle v-if="loading" class="spin" :size="16" /><Search v-else :size="16" />{{ loading ? '查询中' : '查询' }}</button><button class="refresh-btn" :disabled="loading" title="忽略缓存并重新请求" @click="lookup(true)"><RefreshCw :size="16" />刷新</button></div>
         <p v-if="error" class="error-tip">{{ error }}</p><p v-else class="lookup-tip">{{ cacheMessage || '指定 IP 地址时，成功响应会在浏览器 IndexedDB 中缓存 1 小时；当前公网 IP 每次都会实时查询。遇到 429 会按服务建议的等待时间暂停重试。' }}</p>
       </section>
 
@@ -15,13 +15,18 @@
       <div v-if="results.length" class="result-grid"><article v-for="result in results" :key="result.id" class="provider-card"><div class="provider-title"><span>{{ result.name }}</span><span class="source-status" :class="result.error ? 'failed' : result.cached ? 'cached' : 'success'">{{ result.error ? '不可用' : result.cached ? '缓存结果' : '已返回' }}</span></div><p v-if="result.error" class="provider-error">{{ result.error }}</p><template v-else><dl class="field-list"><template v-for="field in result.fields" :key="field.label"><dt>{{ field.label }}</dt><dd>{{ field.value || '—' }}</dd></template></dl><details><summary>查看原始数据</summary><pre>{{ JSON.stringify(result.raw, null, 2) }}</pre></details></template></article></div>
       <div v-else-if="!loading" class="empty-state"><Globe2 :size="32" /><span>输入 IP 地址开始查询</span></div>
     </main>
+
+    <Transition name="toast">
+      <div v-if="toastMessage" class="toast" :class="toastType">{{ toastMessage }}</div>
+    </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { ArrowLeft, Globe2, LoaderCircle, MapPin, Network, RefreshCw, Search } from 'lucide-vue-next'
 import { useTheme } from '@/composables/useTheme'
+import { findTool } from '@/utils/toolPipeline'
 
 type Field = { label: string; value: string }
 type ProviderResult = { id: string; name: string; raw?: Record<string, unknown>; fields: Field[]; error?: string; cached?: boolean }
@@ -30,14 +35,18 @@ type CacheRecord = { key: string; data?: Record<string, any>; results?: Provider
 const CACHE_DB = 'newbie-ip-lookup', CACHE_STORE = 'responses', CACHE_TTL = 60 * 60 * 1000
 let cacheDatabase: Promise<IDBDatabase> | null = null
 const { isDark } = useTheme()
+const tool = findTool('ip-lookup')
 const ip = ref(''), selectedProvider = ref('all'), loading = ref(false), error = ref(''), results = ref<ProviderResult[]>([]), cacheMessage = ref('')
+const toastMessage = ref('')
+const toastType = ref<'success' | 'error'>('success')
+let toastTimer: ReturnType<typeof setTimeout> | null = null
 const text = (value: unknown) => value === undefined || value === null || value === '' ? '' : String(value)
 const providers: Provider[] = [
-  { id: 'iprust', name: 'IPRust', request: () => 'http://iprust.io/ip.json', isFailure: data => Boolean(data.error || data.message), parse: data => [{ label: 'IP', value: text(data.ip) }, { label: '国家 / 地区', value: [data.country, data.country_name, data.region, data.city].filter(Boolean).join(' · ') }, { label: 'ASN / 运营商', value: [data.asn?.number && `AS${data.asn.number}`, data.asn?.name, data.organization, data.org].filter(Boolean).join(' · ') }, { label: '时区', value: text(data.timezone) }, { label: '坐标', value: data.latitude != null || data.lat != null ? `${data.latitude ?? data.lat}, ${data.longitude ?? data.lon}` : '' }, { label: '邮编', value: text(data.postal || data.zip) }] },
+  { id: 'iprust', name: 'IPRust', request: () => 'https://iprust.io/ip.json', isFailure: data => Boolean(data.error || data.message), parse: data => [{ label: 'IP', value: text(data.ip) }, { label: '国家 / 地区', value: [data.country, data.country_name, data.region, data.city].filter(Boolean).join(' · ') }, { label: 'ASN / 运营商', value: [data.asn?.number && `AS${data.asn.number}`, data.asn?.name, data.organization, data.org].filter(Boolean).join(' · ') }, { label: '时区', value: text(data.timezone) }, { label: '坐标', value: data.latitude != null || data.lat != null ? `${data.latitude ?? data.lat}, ${data.longitude ?? data.lon}` : '' }, { label: '邮编', value: text(data.postal || data.zip) }] },
   { id: 'ipwhois', name: 'ipwho.is', request: value => `https://ipwho.is/${encodeURIComponent(value)}`, isFailure: data => data.success === false, parse: data => [{ label: 'IP', value: text(data.ip) }, { label: '国家 / 地区', value: [data.country, data.region, data.city].filter(Boolean).join(' · ') }, { label: 'ASN / 运营商', value: [data.connection?.asn && `AS${data.connection.asn}`, data.connection?.org || data.connection?.isp].filter(Boolean).join(' · ') }, { label: '时区', value: text(data.timezone?.id) }, { label: '坐标', value: data.latitude != null ? `${data.latitude}, ${data.longitude}` : '' }, { label: '类型', value: text(data.type) }] },
   { id: 'ipapi', name: 'ipapi.co', request: value => `https://ipapi.co/${encodeURIComponent(value)}/json/`, isFailure: data => Boolean(data.error), parse: data => [{ label: 'IP', value: text(data.ip) }, { label: '国家 / 地区', value: [data.country_name, data.region, data.city].filter(Boolean).join(' · ') }, { label: 'ASN / 运营商', value: [data.asn, data.org].filter(Boolean).join(' · ') }, { label: '时区', value: text(data.timezone) }, { label: '坐标', value: data.latitude != null ? `${data.latitude}, ${data.longitude}` : '' }, { label: '邮编', value: text(data.postal) }] },
   { id: 'ipinfo', name: 'ipinfo.io', request: value => `https://ipinfo.io/${encodeURIComponent(value)}/json`, isFailure: data => Boolean(data.error || data.bogon), parse: data => [{ label: 'IP', value: text(data.ip) }, { label: '国家 / 地区', value: [data.country, data.region, data.city].filter(Boolean).join(' · ') }, { label: '网络', value: [data.org, data.asn?.name].filter(Boolean).join(' · ') }, { label: '时区', value: text(data.timezone) }, { label: '坐标', value: text(data.loc) }, { label: '邮编', value: text(data.postal) }] },
-  { id: 'ipapicom', name: 'ip-api.com', request: value => `http://ip-api.com/json/${encodeURIComponent(value)}`, isFailure: data => data.status !== 'success', parse: data => [{ label: 'IP', value: text(data.query) }, { label: '国家 / 地区', value: [data.country, data.regionName, data.city].filter(Boolean).join(' · ') }, { label: 'ASN / 运营商', value: [data.as, data.isp, data.org].filter(Boolean).join(' · ') }, { label: '时区', value: text(data.timezone) }, { label: '坐标', value: data.lat != null ? `${data.lat}, ${data.lon}` : '' }, { label: '邮编', value: text(data.zip) }] },
+  { id: 'ipapicom', name: 'ip-api.com', request: value => `https://ip-api.com/json/${encodeURIComponent(value)}`, isFailure: data => data.status !== 'success', parse: data => [{ label: 'IP', value: text(data.query) }, { label: '国家 / 地区', value: [data.country, data.regionName, data.city].filter(Boolean).join(' · ') }, { label: 'ASN / 运营商', value: [data.as, data.isp, data.org].filter(Boolean).join(' · ') }, { label: '时区', value: text(data.timezone) }, { label: '坐标', value: data.lat != null ? `${data.lat}, ${data.lon}` : '' }, { label: '邮编', value: text(data.zip) }] },
   { id: 'ipapiis', name: 'ipapi.is', request: value => value ? `https://api.ipapi.is/?q=${encodeURIComponent(value)}` : 'https://api.ipapi.is/', isFailure: data => Boolean(data.error || !data.ip), parse: data => [{ label: 'IP', value: text(data.ip) }, { label: '国家 / 地区', value: [data.location?.country_name, data.location?.state, data.location?.city].filter(Boolean).join(' · ') }, { label: 'ASN / 运营商', value: [data.asn?.asn && `AS${data.asn.asn}`, data.asn?.descr_short || data.asn?.descr, data.company?.name].filter(Boolean).join(' · ') }, { label: '时区', value: text(data.location?.timezone) }, { label: '坐标', value: data.location?.latitude != null ? `${data.location.latitude}, ${data.location.longitude}` : '' }, { label: '邮编', value: text(data.location?.zip) }, { label: '类型', value: [data.is_mobile && '移动网络', data.is_datacenter && '数据中心', data.is_proxy && '代理', data.is_vpn && 'VPN', data.is_tor && 'Tor'].filter(Boolean).join(' · ') || '—' }] },
 ]
 const summary = computed(() => {
@@ -177,15 +186,22 @@ async function fetchProvider(provider: Provider, value: string, forceRefresh = f
     return { id: provider.id, name: provider.name, raw: data, fields: provider.parse(data) }
   } catch { return { id: provider.id, name: provider.name, fields: [], error: '请求失败：服务不可达、超时或被浏览器 CORS 策略阻止' } }
 }
+function showToast(message: string, type: 'success' | 'error') {
+  if (toastTimer) clearTimeout(toastTimer)
+  toastMessage.value = message
+  toastType.value = type
+  toastTimer = setTimeout(() => { toastMessage.value = '' }, 2200)
+}
 async function lookup(forceRefresh = false) {
-  if (!validIp(ip.value)) { error.value = '请输入有效的 IPv4 或 IPv6 地址'; return }
-  if (ip.value && selectedProvider.value === 'iprust') { error.value = 'IPRust 的 ip.json 仅返回当前公网 IP；请输入空值后再使用该数据源。'; return }
+  if (!validIp(ip.value)) { error.value = '请输入有效的 IPv4 或 IPv6 地址'; showToast(error.value, 'error'); return }
+  if (ip.value && selectedProvider.value === 'iprust') { error.value = 'IPRust 的 ip.json 仅返回当前公网 IP；请输入空值后再使用该数据源。'; showToast(error.value, 'error'); return }
   error.value = ''; cacheMessage.value = ''; results.value = []; loading.value = true
   const localResult = ip.value ? localIpResult(ip.value) : null
   if (localResult) {
     results.value = [localResult]
     cacheMessage.value = '已识别为特殊网络地址，结果由浏览器本地生成，未发起任何网络请求。'
     loading.value = false
+    showToast('已完成本地解析', 'success')
     return
   }
   const targets = (selectedProvider.value === 'all' ? providers : providers.filter(item => item.id === selectedProvider.value))
@@ -194,11 +210,18 @@ async function lookup(forceRefresh = false) {
   const cachedCount = results.value.filter(item => item.cached).length
   if (cachedCount) cacheMessage.value = `本次查询命中 ${cachedCount}/${targets.length} 个浏览器缓存（有效期 1 小时）。`
   else if (forceRefresh && ip.value) cacheMessage.value = '已跳过正常缓存并重新请求数据源。'
-  if (results.value.every(item => item.error)) error.value = '所有数据源均未返回可用结果，请稍后重试或切换数据源。'
+  if (results.value.every(item => item.error)) {
+    error.value = '所有数据源均未返回可用结果，请稍后重试或切换数据源。'
+    showToast(error.value, 'error')
+  } else {
+    showToast('IP 信息查询完成', 'success')
+  }
   loading.value = false
 }
 
-onMounted(() => lookup())
+onUnmounted(() => {
+  if (toastTimer) clearTimeout(toastTimer)
+})
 </script>
 
 <style scoped>
