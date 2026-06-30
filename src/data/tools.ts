@@ -1,5 +1,5 @@
 import type { Component } from 'vue'
-import { Activity, AlertTriangle, BarChart3, Braces, Clock, Container, Crop, FileImage, FileSearch, Fingerprint, GitCompare, Hash, Image, ImageOff, Link2, Network, Palette, QrCode, ScanLine, Send, Shuffle } from 'lucide-vue-next'
+import { Activity, AlertTriangle, BarChart3, Braces, Braces, Clock, Container, Crop, FileImage, FileImage, FileSearch, Fingerprint, GitCompare, Hash, Image, Hash, Image, ImageOff, Link2, Network, Palette, QrCode, ScanLine, Send, Shuffle } from 'lucide-vue-next'
 
 /** 工具间流转的数据类型 */
 export type DataType = 'text' | 'image'
@@ -228,5 +228,49 @@ export const tools: ToolItem[] = [
     inputType: [],
     outputType: 'text',
     color: '#ef4444'
+  },
+  {
+    id: 'image-to-base64',
+    name: '图片转 Base64',
+    desc: '将图片编码为 Base64 data URL，支持粘贴、拖拽上传，输出可直接用于 img 标签或 CSS。',
+    path: '/tools/image-to-base64',
+    icon: Image,
+    tags: ['图片处理', 'Canvas', '本地运行'],
+    inputType: ['image'],
+    outputType: 'text',
+    color: '#10b981'
+  },
+  {
+    id: 'base64-to-image',
+    name: 'Base64 转图片',
+    desc: '将 Base64 编码的图片数据还原为图片，支持 data URL 或纯 Base64 字符串，可预览和下载。',
+    path: '/tools/base64-to-image',
+    icon: FileImage,
+    tags: ['图片处理', '本地运行'],
+    inputType: ['text'],
+    outputType: 'image',
+    color: '#10b981'
+  },
+  {
+    id: 'uuid-generator',
+    name: 'UUID 生成器',
+    desc: '生成 UUID v4 / v7 或自定义长度随机字符串，支持批量生成，纯本地 crypto API 处理。',
+    path: '/tools/uuid-generator',
+    icon: Hash,
+    tags: ['生成器', '本地运行'],
+    inputType: [],
+    outputType: 'text',
+    color: '#8b5cf6'
+  },
+  {
+    id: 'json-formatter',
+    name: 'JSON 格式化',
+    desc: 'JSON 美化、压缩和语法验证，自动检测错误位置，显示键数量和嵌套深度。',
+    path: '/tools/json-formatter',
+    icon: Braces,
+    tags: ['文本处理', '本地运行'],
+    inputType: ['text'],
+    outputType: 'text',
+    color: '#3b82f6'
   }
 ]

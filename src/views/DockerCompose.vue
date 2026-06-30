@@ -27,6 +27,7 @@
             <label for="docker-run">Docker Run 命令</label>
             <textarea
               id="docker-run"
+              class="docker-run-input"
               v-model="dockerRunCommand"
               rows="10"
               placeholder="docker run -d --name nginx -p 80:80 -v /data:/usr/share/nginx/html nginx:latest"
@@ -307,6 +308,10 @@ label {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.docker-run-input {
+  font-family: var(--font-family-mono, 'Monaco', 'Menlo', 'Courier New', monospace);
 }
 
 .output-header {

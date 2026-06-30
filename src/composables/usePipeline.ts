@@ -140,7 +140,7 @@ export function usePipeline(options: UsePipelineOptions): UsePipelineReturn {
       }, 300)
       return { ok: true, message: `已发送至「${targetTool.name}」，即将跳转` }
     }
-    return { ok: false, message: '文本过长，无法流转' }
+    return { ok: false, message: '文本超过 4MB，无法流转（请下载后手动导入）' }
   }
 
   return {

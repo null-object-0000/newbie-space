@@ -1,4 +1,5 @@
 import type { RouteRecordRaw } from 'vue-router'
+import { posts } from '@/data/posts'
 
 export const routes: RouteRecordRaw[] = [
   {
@@ -111,6 +112,26 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('@/views/IpLookup.vue')
   },
   {
+    path: '/tools/image-to-base64',
+    name: 'image-to-base64',
+    component: () => import('@/views/ImageToBase64.vue')
+  },
+  {
+    path: '/tools/base64-to-image',
+    name: 'base64-to-image',
+    component: () => import('@/views/Base64ToImage.vue')
+  },
+  {
+    path: '/tools/uuid-generator',
+    name: 'uuid-generator',
+    component: () => import('@/views/UuidGenerator.vue')
+  },
+  {
+    path: '/tools/json-formatter',
+    name: 'json-formatter',
+    component: () => import('@/views/JsonFormatter.vue')
+  },
+  {
     path: '/tools/port-check',
     name: 'port-check',
     component: () => import('@/views/PortCheck.vue')
@@ -126,3 +147,40 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('@/views/ProcessManager.vue')
   }
 ]
+
+// 为 SSG 生成所有博客文章的静态路由
+export function getStaticRoutes(): string[] {
+  const staticRoutes = [
+    '/',
+    '/nav/',
+    '/posts',
+    '/projects',
+    '/tools',
+    '/tools/background-transparent',
+    '/tools/image-resize',
+    '/tools/qrcode-gen',
+    '/tools/qrcode-decode',
+    '/tools/url-encoder',
+    '/tools/hash-text',
+    '/tools/format-convert',
+    '/tools/color-converter',
+    '/tools/random-port',
+    '/tools/date-converter',
+    '/tools/text-statistics',
+    '/tools/text-diff',
+    '/tools/docker-compose',
+    '/tools/http-client',
+    '/tools/ip-lookup',
+    '/tools/image-to-base64',
+    '/tools/base64-to-image',
+    '/tools/uuid-generator',
+    '/tools/json-formatter'
+  ]
+  
+  // 添加所有博客文章路由
+  for (const post of posts) {
+    staticRoutes.push(`/posts/${post.slug}`)
+  }
+  
+  return staticRoutes
+}

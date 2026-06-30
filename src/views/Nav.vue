@@ -199,6 +199,8 @@ const rawData = navData.map((cat: any) => {
 
 // 自有工具完整列表（用于动态填充子菜单）
 const selfToolsList = [
+  { name: 'HTTP 请求', icon: 'send', link: '/tools/http-client', desc: '轻量级 API 调试工具，支持常用请求方法、查询参数、请求头和 JSON 请求体' },
+  { name: 'IP 信息解析', icon: 'network', link: '/tools/ip-lookup', desc: '聚合多个公开 IP 数据服务，查询归属地、ASN、运营商和时区' },
   { name: '背景透明化', icon: 'image-off', link: '/tools/background-transparent', desc: '将白色或指定颜色背景转换为透明 PNG' },
   { name: '图片尺寸调整', icon: 'crop', link: '/tools/image-resize', desc: '自由调整图片宽度和高度' },
   { name: '二维码生成', icon: 'qr-code', link: '/tools/qrcode-gen', desc: '输入文字或链接生成二维码' },
