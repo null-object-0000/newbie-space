@@ -110,6 +110,26 @@ export const routes: RouteRecordRaw[] = [
     path: '/tools/ip-lookup',
     name: 'ip-lookup',
     component: () => import('@/views/IpLookup.vue')
+  },
+  {
+    path: '/tools/image-to-base64',
+    name: 'image-to-base64',
+    component: () => import('@/views/ImageToBase64.vue')
+  },
+  {
+    path: '/tools/base64-to-image',
+    name: 'base64-to-image',
+    component: () => import('@/views/Base64ToImage.vue')
+  },
+  {
+    path: '/tools/uuid-generator',
+    name: 'uuid-generator',
+    component: () => import('@/views/UuidGenerator.vue')
+  },
+  {
+    path: '/tools/json-formatter',
+    name: 'json-formatter',
+    component: () => import('@/views/JsonFormatter.vue')
   }
 ]
 
@@ -135,7 +155,11 @@ export function getStaticRoutes(): string[] {
     '/tools/text-diff',
     '/tools/docker-compose',
     '/tools/http-client',
-    '/tools/ip-lookup'
+    '/tools/ip-lookup',
+    '/tools/image-to-base64',
+    '/tools/base64-to-image',
+    '/tools/uuid-generator',
+    '/tools/json-formatter'
   ]
   
   // 添加所有博客文章路由

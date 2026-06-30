@@ -90,7 +90,7 @@ function clearPipelineImage() {
 
 const TEXT_KEY = 'tool-pipeline-text'
 const TEXT_FROM_KEY = 'tool-pipeline-text-from'
-const MAX_TEXT_KB = 64
+const MAX_TEXT_MB = 4
 
 export interface PipelineText {
   text: string
@@ -100,9 +100,9 @@ export interface PipelineText {
 export function storePipelineText(data: PipelineText): boolean {
   if (!canUseStorage()) return false
 
-  const sizeKB = new Blob([data.text]).size / 1024
-  if (sizeKB > MAX_TEXT_KB) {
-    console.warn(`[toolPipeline] 文本过大 (${sizeKB.toFixed(1)} KB)，不存入流转`)
+  const sizeMB = new Blob([data.text]).size / (1024 * 1024)
+  if (sizeMB > MAX_TEXT_MB) {
+    console.warn(`[toolPipeline] 文本过大 (${sizeMB.toFixed(1)} MB)，不存入流转`)
     return false
   }
 
