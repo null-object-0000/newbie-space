@@ -13,7 +13,7 @@
       <section class="tool-header">
         <div class="tool-heading">
           <div class="heading-icon">
-            <Image :size="22" />
+            <ImageIcon :size="22" />
           </div>
           <div>
             <h1>{{ tool?.name }}</h1>
@@ -103,7 +103,7 @@ import {
   ArrowRightLeft,
   Copy,
   Download,
-  Image,
+  Image as ImageIcon,
   Trash2,
   UploadCloud
 } from 'lucide-vue-next'
@@ -118,7 +118,7 @@ const { pipelineFrom, downstreamTools, sendTextTo } = usePipeline({
     if (incoming.type !== 'image') return false
     try {
       const blob = dataUrlToBlob(incoming.data.dataUrl)
-      const file = new File([blob], incoming.data.fileName, { type: 'image/png' })
+      const file = new File([blob], incoming.data.fileName, { type: blob.type || 'image/png' })
       await loadFile(file)
       showToast(`已接收来自「${incoming.data.fromTool}」的图片`, 'success')
       return true
@@ -188,19 +188,12 @@ async function loadFile(file: File) {
   sourceFormat.value = file.type.split('/')[1] || 'png'
 
   try {
+    const dataUrl = await readFileAsDataUrl(file)
     const img = await loadImage(objectUrl)
     sourceWidth.value = img.naturalWidth
     sourceHeight.value = img.naturalHeight
-
-    const canvas = document.createElement('canvas')
-    canvas.width = img.naturalWidth
-    canvas.height = img.naturalHeight
-    const ctx = canvas.getContext('2d')
-    if (ctx) {
-      ctx.drawImage(img, 0, 0)
-      sourceDataUrl.value = canvas.toDataURL('image/png')
-      base64Output.value = sourceDataUrl.value
-    }
+    sourceDataUrl.value = dataUrl
+    base64Output.value = dataUrl
   } catch {
     showToast('图片加载失败', 'error')
   }
@@ -251,6 +244,18 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     img.onload = () => resolve(img)
     img.onerror = () => reject(new Error('图片加载失败'))
     img.src = src
+  })
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result === 'string') resolve(reader.result)
+      else reject(new Error('读取图片失败'))
+    }
+    reader.onerror = () => reject(new Error('读取图片失败'))
+    reader.readAsDataURL(file)
   })
 }
 
