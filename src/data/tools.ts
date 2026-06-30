@@ -1,5 +1,5 @@
 import type { Component } from 'vue'
-import { Activity, AlertTriangle, BarChart3, Braces, Clock, Container, Crop, FileImage, FolderSearch, Fingerprint, GitCompare, Hash, Image, ImageOff, Link2, Network, Palette, QrCode, ScanLine, Send, Shuffle } from 'lucide-vue-next'
+import { Activity, BarChart3, Bot, Braces, Clock, Container, Crop, FileImage, FolderSearch, Fingerprint, GitCompare, Hash, Image, ImageOff, Link2, Network, Palette, QrCode, ScanLine, Send, Shuffle } from 'lucide-vue-next'
 import type { RuntimeTarget } from '@/utils/runtime'
 
 /** 工具间流转的数据类型 */
@@ -39,6 +39,19 @@ export const tools: ToolItem[] = [
     inputType: ['text'],
     outputType: 'text',
     color: '#f97316'
+  },
+  {
+    id: 'llm-gateway',
+    name: 'LLM API 网关',
+    desc: '在桌面端启动本地 OpenAI-compatible 代理，支持渠道、API Key 池、模型映射、降级和用量日志。',
+    path: '/tools/llm-gateway',
+    icon: Bot,
+    tags: ['网络开发', '系统工具', 'LLM'],
+    category: '网络开发',
+    runtime: 'desktop',
+    inputType: [],
+    outputType: 'text',
+    color: '#14b8a6'
   },
   {
     id: 'ip-lookup',
