@@ -55,6 +55,24 @@
             <div class="metric"><span>费用</span><strong>${{ usage.estimated_cost.toFixed(6) }}</strong></div>
           </div>
 
+          <div class="agent-box">
+            <div class="section-title">
+              <label class="section-label">Agent 接入</label>
+              <span class="agent-model">{{ defaultAgentModel || '未配置模型' }}</span>
+            </div>
+            <div class="agent-grid">
+              <div v-for="snippet in agentSnippets" :key="snippet.id" class="agent-card">
+                <div class="agent-head">
+                  <strong>{{ snippet.name }}</strong>
+                  <button class="icon-btn compact-icon" :title="`复制 ${snippet.name}`" @click="copySnippet(snippet.text)">
+                    <Copy :size="15" />
+                  </button>
+                </div>
+                <pre>{{ snippet.text }}</pre>
+              </div>
+            </div>
+          </div>
+
           <div class="profile-box">
             <label class="section-label">配置 Profile</label>
             <div class="profile-row">
@@ -130,6 +148,13 @@
             <div class="form-grid two">
               <label class="field"><span>最大并发</span><input v-model.number="config.max_concurrent_requests" type="number" min="0" max="256" /></label>
               <label class="field"><span>每分钟请求</span><input v-model.number="config.requests_per_minute" type="number" min="0" max="60000" /></label>
+            </div>
+            <div class="form-grid two">
+              <label class="toggle"><input v-model="config.inbound_auth_enabled" type="checkbox" />启用本地网关鉴权</label>
+              <label class="field">
+                <span>入站 API Key</span>
+                <input v-model="config.inbound_api_key" type="password" placeholder="用于 Agent 连接本地网关" />
+              </label>
             </div>
 
             <div class="section-title">
@@ -230,6 +255,39 @@
             <div><span>Total</span><strong>{{ usage.total_tokens }}</strong></div>
           </div>
 
+          <div class="usage-breakdowns">
+            <div class="usage-table">
+              <label class="section-label">按模型</label>
+              <div v-for="item in usage.by_model.slice(0, 5)" :key="item.id" class="usage-row">
+                <strong>{{ item.label }}</strong>
+                <span>{{ item.requests }} req</span>
+                <span>{{ item.total_tokens }} tok</span>
+                <span>${{ item.estimated_cost.toFixed(6) }}</span>
+              </div>
+              <div v-if="!usage.by_model.length" class="empty-row compact">暂无统计</div>
+            </div>
+            <div class="usage-table">
+              <label class="section-label">按渠道</label>
+              <div v-for="item in usage.by_channel.slice(0, 5)" :key="item.id" class="usage-row">
+                <strong>{{ item.label }}</strong>
+                <span>{{ item.success }}/{{ item.requests }}</span>
+                <span>{{ item.total_tokens }} tok</span>
+                <span>${{ item.estimated_cost.toFixed(6) }}</span>
+              </div>
+              <div v-if="!usage.by_channel.length" class="empty-row compact">暂无统计</div>
+            </div>
+            <div class="usage-table">
+              <label class="section-label">按 Key</label>
+              <div v-for="item in usage.by_key.slice(0, 5)" :key="item.id" class="usage-row">
+                <strong>{{ item.label }}</strong>
+                <span>{{ item.success }}/{{ item.requests }}</span>
+                <span>{{ item.total_tokens }} tok</span>
+                <span>${{ item.estimated_cost.toFixed(6) }}</span>
+              </div>
+              <div v-if="!usage.by_key.length" class="empty-row compact">暂无统计</div>
+            </div>
+          </div>
+
           <div v-if="testResults.length" class="test-results">
             <label class="section-label">渠道测试</label>
             <div v-for="result in testResults" :key="result.channel_id" class="test-row" :class="{ ok: result.ok }">
@@ -292,8 +350,32 @@
           <span>Channel</span><strong>{{ selectedLog.channel_id || '-' }}</strong>
           <span>Key</span><strong>{{ selectedLog.key_id || '-' }}</strong>
           <span>Latency</span><strong>{{ selectedLog.latency_ms }}ms</strong>
+          <span>Prompt Tokens</span><strong>{{ selectedLog.prompt_tokens }}</strong>
+          <span>Completion Tokens</span><strong>{{ selectedLog.completion_tokens }}</strong>
+          <span>Total Tokens</span><strong>{{ selectedLog.total_tokens }}</strong>
+          <span>Cost</span><strong>${{ selectedLog.estimated_cost.toFixed(6) }}</strong>
         </div>
         <div v-if="selectedLog.error" class="log-error detail-error">{{ selectedLog.error }}</div>
+        <template v-if="selectedLog.attempts?.length">
+          <label class="section-label">Fallback Attempts</label>
+          <div class="attempt-list">
+            <div v-for="attempt in selectedLog.attempts" :key="`${attempt.channel_id}-${attempt.attempt}`" class="attempt-row">
+              <div class="attempt-main">
+                <strong>{{ attempt.channel_name }}</strong>
+                <span>{{ attempt.status ? `HTTP ${attempt.status}` : '未连接' }}</span>
+                <span>{{ attempt.latency_ms }}ms</span>
+              </div>
+              <div class="attempt-meta">
+                <span>attempt: {{ attempt.attempt }}</span>
+                <span>key: {{ attempt.key_id || '-' }}</span>
+                <span>model: {{ attempt.upstream_model }}</span>
+                <span>request: {{ attempt.upstream_request_id || '-' }}</span>
+              </div>
+              <div class="attempt-endpoint">{{ attempt.endpoint }}</div>
+              <div v-if="attempt.error" class="log-error">{{ attempt.error }}</div>
+            </div>
+          </div>
+        </template>
         <label class="section-label">Input</label>
         <pre>{{ JSON.stringify(selectedLog.input, null, 2) }}</pre>
         <label class="section-label">Output</label>
@@ -307,13 +389,14 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useTheme } from '@/composables/useTheme'
 import { findTool } from '@/utils/toolPipeline'
 import {
   ArrowLeft,
   Bot,
+  Copy,
   FileJson,
   FileText,
   FlaskConical,
@@ -361,6 +444,8 @@ interface ModelRouteConfig {
 interface GatewayConfig {
   listen_host: string
   listen_port: number
+  inbound_auth_enabled: boolean
+  inbound_api_key: string
   channels: ChannelConfig[]
   model_routes: ModelRouteConfig[]
   max_concurrent_requests: number
@@ -408,6 +493,21 @@ interface UsageSummary {
   completion_tokens: number
   total_tokens: number
   estimated_cost: number
+  by_model: UsageBreakdown[]
+  by_channel: UsageBreakdown[]
+  by_key: UsageBreakdown[]
+}
+
+interface UsageBreakdown {
+  id: string
+  label: string
+  requests: number
+  success: number
+  failed: number
+  prompt_tokens: number
+  completion_tokens: number
+  total_tokens: number
+  estimated_cost: number
 }
 
 interface RequestLog {
@@ -426,6 +526,20 @@ interface RequestLog {
   error: string | null
   input: unknown
   output: unknown
+  attempts: RequestAttemptLog[]
+}
+
+interface RequestAttemptLog {
+  attempt: number
+  channel_id: string
+  channel_name: string
+  key_id: string | null
+  upstream_model: string
+  endpoint: string
+  status: number | null
+  latency_ms: number
+  upstream_request_id: string | null
+  error: string | null
 }
 
 interface ChannelTestResult {
@@ -465,6 +579,66 @@ const startupPages = [
   { path: '/tools/port-check', name: '端口检测' },
   { path: '/tools/process-manager', name: '进程管理' }
 ]
+const gatewayBaseUrl = computed(() => {
+  const host = formatListenHost(config.value.listen_host || '127.0.0.1')
+  const port = Number(config.value.listen_port || 11434)
+  return `http://${host}:${port}`
+})
+const defaultAgentModel = computed(() => {
+  const route = config.value.model_routes.find(route => route.enabled && route.public_model.trim())
+    || config.value.model_routes.find(route => route.public_model.trim())
+  return route?.public_model || ''
+})
+const localApiKey = computed(() => {
+  if (!config.value.inbound_auth_enabled) return 'not-required'
+  return config.value.inbound_api_key.trim() || '<local-gateway-api-key>'
+})
+const agentSnippets = computed(() => {
+  const model = defaultAgentModel.value || '<public-model>'
+  const baseUrl = gatewayBaseUrl.value
+  const apiKey = localApiKey.value
+  return [
+    {
+      id: 'claude-code',
+      name: 'Claude Code',
+      text: [
+        `ANTHROPIC_BASE_URL=${baseUrl}`,
+        `ANTHROPIC_AUTH_TOKEN=${apiKey}`,
+        `ANTHROPIC_MODEL=${model}`
+      ].join('\n')
+    },
+    {
+      id: 'codex',
+      name: 'Codex',
+      text: [
+        '[model_providers.local-newbie]',
+        'name = "Local Newbie Gateway"',
+        `base_url = "${baseUrl}/v1"`,
+        'wire_api = "responses"',
+        `env_key = "${config.value.inbound_auth_enabled ? 'NEWBIE_GATEWAY_API_KEY' : 'OPENAI_API_KEY'}"`,
+        '',
+        '[profiles.local-newbie]',
+        'model_provider = "local-newbie"',
+        `model = "${model}"`
+      ].join('\n')
+    },
+    {
+      id: 'openai-compatible',
+      name: 'OpenAI Compatible',
+      text: [
+        `OPENAI_BASE_URL=${baseUrl}/v1`,
+        `OPENAI_API_KEY=${apiKey}`,
+        `OPENAI_MODEL=${model}`
+      ].join('\n')
+    }
+  ]
+})
+
+function formatListenHost(host: string) {
+  const trimmed = host.trim()
+  if (trimmed === '::1') return '[::1]'
+  return trimmed || '127.0.0.1'
+}
 const status = ref<GatewayStatus>({
   running: false,
   listen_url: '',
@@ -480,7 +654,10 @@ const usage = ref<UsageSummary>({
   prompt_tokens: 0,
   completion_tokens: 0,
   total_tokens: 0,
-  estimated_cost: 0
+  estimated_cost: 0,
+  by_model: [],
+  by_channel: [],
+  by_key: []
 })
 const toastMessage = ref('')
 const toastType = ref<'success' | 'error'>('success')
@@ -519,12 +696,12 @@ function createDefaultConfig(): GatewayConfig {
   return {
     listen_host: '127.0.0.1',
     listen_port: 11434,
+    inbound_auth_enabled: false,
+    inbound_api_key: '',
     max_concurrent_requests: 8,
     requests_per_minute: 120,
     channels: [],
-    model_routes: [],
-    max_concurrent_requests: 8,
-    requests_per_minute: 120
+    model_routes: []
   }
 }
 
@@ -532,6 +709,8 @@ function normalizeConfig(value: GatewayConfig): GatewayConfig {
   return {
     listen_host: value.listen_host || '127.0.0.1',
     listen_port: Number(value.listen_port || 11434),
+    inbound_auth_enabled: value.inbound_auth_enabled ?? false,
+    inbound_api_key: value.inbound_api_key || '',
     max_concurrent_requests: Number(value.max_concurrent_requests ?? 8),
     requests_per_minute: Number(value.requests_per_minute ?? 120),
     channels: (value.channels || []).map(channel => ({
@@ -872,6 +1051,8 @@ function loadExample() {
   config.value = normalizeConfig({
     listen_host: '127.0.0.1',
     listen_port: 11434,
+    inbound_auth_enabled: true,
+    inbound_api_key: 'newbie-local-agent-token',
     max_concurrent_requests: 8,
     requests_per_minute: 120,
     channels: [
@@ -932,6 +1113,15 @@ function showToast(m: string, t: 'success' | 'error') {
   toastTimer = setTimeout(() => { toastMessage.value = '' }, 2200)
 }
 
+async function copySnippet(text: string) {
+  try {
+    await navigator.clipboard.writeText(text)
+    showToast('配置已复制', 'success')
+  } catch (e) {
+    showToast(`复制失败：${e}`, 'error')
+  }
+}
+
 onMounted(async () => {
   try {
     await loadDesktopSettings()
@@ -975,7 +1165,8 @@ onUnmounted(() => {
 }
 
 .profile-box,
-.sync-box {
+.sync-box,
+.agent-box {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -1002,6 +1193,49 @@ onUnmounted(() => {
   min-height: 2.25rem;
 }
 
+.agent-model {
+  min-width: 0;
+  color: var(--text-secondary);
+  font-family: var(--font-family-mono, monospace);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.agent-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+.agent-card {
+  min-width: 0;
+  padding: 0.625rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  background: var(--bg-primary);
+}
+
+.agent-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+}
+
+.agent-card pre {
+  margin: 0.5rem 0 0;
+  max-height: 180px;
+  overflow: auto;
+  color: var(--text-secondary);
+  font-family: var(--font-family-mono, monospace);
+  font-size: 0.75rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .profile-row select,
 .profile-row input {
   min-width: 0;
@@ -1019,6 +1253,12 @@ onUnmounted(() => {
   min-height: 2rem;
   padding: 0.25rem 0.5rem;
   font-size: 0.75rem;
+}
+
+.compact-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: 0 0 auto;
 }
 
 .listen-url {
@@ -1055,7 +1295,8 @@ onUnmounted(() => {
 .status-pill.running .status-dot { background: #10b981; }
 
 .metric-grid,
-.usage-strip {
+.usage-strip,
+.usage-breakdowns {
   display: grid;
   gap: 0.5rem;
 }
@@ -1065,9 +1306,14 @@ onUnmounted(() => {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   margin-bottom: 1rem;
 }
+.usage-breakdowns {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 1rem;
+}
 
 .metric,
-.usage-strip > div {
+.usage-strip > div,
+.usage-table {
   padding: 0.625rem;
   border: 1px solid var(--border-color);
   border-radius: 0.5rem;
@@ -1086,6 +1332,31 @@ onUnmounted(() => {
 .usage-strip strong {
   color: var(--text-primary);
   font-size: 1rem;
+}
+
+.usage-table {
+  min-width: 0;
+}
+
+.usage-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) auto auto auto;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+}
+
+.usage-row strong {
+  min-width: 0;
+  color: var(--text-primary);
+  font-family: var(--font-family-mono, monospace);
+  font-size: 0.75rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .config-form {
@@ -1376,6 +1647,45 @@ onUnmounted(() => {
 
 .detail-error { margin-bottom: 0.75rem; }
 
+.attempt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.attempt-row {
+  padding: 0.625rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  background: var(--bg-elevated);
+}
+
+.attempt-main,
+.attempt-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+}
+
+.attempt-main {
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+}
+
+.attempt-meta,
+.attempt-endpoint {
+  margin-top: 0.375rem;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.attempt-endpoint {
+  font-family: var(--font-family-mono, monospace);
+  overflow-wrap: anywhere;
+}
+
 .log-modal pre {
   max-height: 220px;
   overflow: auto;
@@ -1392,6 +1702,7 @@ onUnmounted(() => {
 
 @media (max-width: 980px) {
   .usage-strip,
+  .usage-breakdowns,
   .form-grid.two,
   .form-grid.three {
     grid-template-columns: 1fr;
