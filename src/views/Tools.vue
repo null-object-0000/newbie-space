@@ -77,6 +77,7 @@ import { computed, ref } from 'vue'
 import { ArrowDownRight, ArrowUpRight, Search, X } from 'lucide-vue-next'
 import { useTheme } from '@/composables/useTheme'
 import { tools, type DataType } from '@/data/tools'
+import { supportsRuntime } from '@/utils/runtime'
 
 const { isDark } = useTheme()
 
@@ -87,7 +88,7 @@ const searchQuery = ref('')
 const tabs = computed(() => {
   // 先按搜索词筛选
   const q = searchQuery.value.trim().toLowerCase()
-  let list = tools
+  let list = tools.filter(t => supportsRuntime(t.runtime))
   if (q) {
     list = list.filter(t =>
       t.name.toLowerCase().includes(q) ||
@@ -107,11 +108,12 @@ const tabs = computed(() => {
     { key: '文本处理', label: '文本处理', count: cats['文本处理'] || 0 },
     { key: '编码转换', label: '编码转换', count: cats['编码转换'] || 0 },
     { key: '网络开发', label: '网络开发', count: cats['网络开发'] || 0 },
+    { key: '系统工具', label: '系统工具', count: cats['系统工具'] || 0 },
   ]
 })
 
 const filteredTools = computed(() => {
-  let list = tools
+  let list = tools.filter(t => supportsRuntime(t.runtime))
   // Tab 筛选
   if (activeTab.value !== 'all') {
     list = list.filter(t => (t.category || t.tags[0]) === activeTab.value)

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nichabric/tauri/dev/crates/tauri-cli/schema.json",
+  "productName": "Newbie Space",
+  "version": "1.0.0",
+  "identifier": "com.newbie-space.desktop",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "bun run dev:desktop:frontend",
+    "beforeBuildCommand": "bun run build:desktop:frontend"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Newbie Space",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 900,
+        "minHeight": 600,
+        "resizable": true,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; script-src 'self'; connect-src ipc: http://ipc.localhost https:"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}

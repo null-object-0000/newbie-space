@@ -1,6 +1,10 @@
+import { createApp as createVueApp, type App as VueApp } from 'vue'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import { ViteSSG } from 'vite-ssg'
 import App from './App.vue'
 import { routes, getStaticRoutes } from './router'
+import { isDesktopApp } from './utils/runtime'
+import { invoke } from '@tauri-apps/api/core'
 
 // 本地字体（避免 Google Fonts CDN 在中国大陆的访问问题）
 import '@fontsource/outfit/400.css'
@@ -21,19 +25,44 @@ import AppHeader from './components/AppHeader.vue'
 import AppFooter from './components/AppFooter.vue'
 import CardLink from './components/nav/CardLink.vue'
 
+function registerGlobalComponents(app: VueApp) {
+  app.component('AppHeader', AppHeader)
+  app.component('AppFooter', AppFooter)
+  app.component('CardLink', CardLink)
+}
+
+if (isDesktopApp()) {
+  const router = createRouter({
+    history: createWebHashHistory(),
+    routes,
+  })
+
+  const app = createVueApp(App)
+  app.use(router)
+  registerGlobalComponents(app)
+
+  invoke<{ startup_path?: string }>('get_desktop_settings')
+    .then(settings => {
+      const startupPath = settings.startup_path || '/'
+      if (startupPath && startupPath !== router.currentRoute.value.path) {
+        return router.replace(startupPath)
+      }
+    })
+    .catch(() => undefined)
+    .finally(() => {
+      app.mount('#app')
+    })
+}
+
 export const createApp = ViteSSG(
   App,
-  { 
-    routes, 
+  {
+    routes,
     base: import.meta.env.BASE_URL || '/',
-    // 配置 SSG 预渲染路由
-    // @ts-ignore
+    // @ts-ignore vite-ssg supports getRoutes for static route generation.
     getRoutes: getStaticRoutes
   },
-  ({ app, router, isClient }) => {
-    // 注册全局组件
-    app.component('AppHeader', AppHeader)
-    app.component('AppFooter', AppFooter)
-    app.component('CardLink', CardLink)
+  ({ app }) => {
+    registerGlobalComponents(app)
   }
 )
