@@ -209,6 +209,18 @@
         "icon": "/icons/proxy_cheap_com.ico",
         "link": "https://www.proxy-cheap.com/",
         "desc": "Discover Proxy-Cheap's budget-friendly services. Explore our cheap proxies solutions for those seeki"
+      },
+      {
+        "name": "Detectradar",
+        "icon": "/icons/detectradar_com.svg",
+        "link": "https://detectradar.com/",
+        "desc": "核对当前出口 IP 与浏览器的时区、语言和环境特征，同时检查 WebRTC、DNS 和 IPv6 泄露，生成问题清单与雷达图。打开网页即可检测，无需安装或注册；分享图会自动脫敏 IP。"
+      },
+      {
+        "name": "IP 查询 - IP分流测试 - Net.Coffee",
+        "icon": "/icons/ip_net_coffee.svg",
+        "link": "https://ip.net.coffee/",
+        "desc": "查询本机 IP 地址及归属地，测试分流规则是否生效。支持国内外 35+ 网站出口 IP 检测、网络连通性测试，一键查看 Cloudflare、Discord、ChatGPT 等站点的实际出口。"
       }
     ]
   },
