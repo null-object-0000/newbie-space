@@ -326,7 +326,7 @@ async function main() {
     // 询问分类和描述
     const addAnswers = await inquirer.prompt([
       {
-        type: 'list',
+        type: 'select',
         name: 'category',
         message: '选择分类:',
         choices: [

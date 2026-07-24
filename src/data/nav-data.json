@@ -191,6 +191,24 @@
         "icon": "mojie",
         "link": "https://www.mojie.me/",
         "desc": "支持流媒体播放，不限制使用人数，不限制到期时间，不限制网络速度"
+      },
+      {
+        "name": "Dashboard",
+        "icon": "/icons/dashboard_webshare_io.ico",
+        "link": "https://dashboard.webshare.io/",
+        "desc": "Webshare is trusted byover 650,000 customers worldwide"
+      },
+      {
+        "name": "CordCloud - 高速网络服务",
+        "icon": "/icons/cordcloud_biz.png",
+        "link": "https://www.cordcloud.biz/",
+        "desc": "遍布全球的150+尊享高速节点，极致低延迟、零丢包，全天候高可用，助您畅享无界互联体验。尊享服务，年均仅需70元起。"
+      },
+      {
+        "name": "Proxy-cheap",
+        "icon": "/icons/proxy_cheap_com.ico",
+        "link": "https://www.proxy-cheap.com/",
+        "desc": "Discover Proxy-Cheap's budget-friendly services. Explore our cheap proxies solutions for those seeki"
       }
     ]
   },
