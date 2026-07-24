@@ -109,3 +109,63 @@ jobs:
               --delete \
               --region ${AWS_DEFAULT_REGION}
           fi
+
+      # PWA：修正 manifest MIME 类型 + 禁用 sw.js/manifest 的浏览器缓存
+      # 原因：
+      #   1. 阿里云 OSS 对 .webmanifest 默认返回 application/octet-stream，
+      #      Chrome 会因此拒绝安装 PWA
+      #   2. sw.js / manifest.webmanifest 必须每次重新验证，否则新版本部署后
+      #      PWA 无法更新（registerType: autoUpdate 依赖浏览器重新拉取 sw.js）
+      - name: Fix PWA MIME types & cache headers
+        env:
+          OSS_ENDPOINT: ${{ secrets.OSS_ENDPOINT }}
+          OSS_PATH: ${{ secrets.OSS_PATH || '' }}
+        run: |
+          OSS_BUCKET="${{ secrets.OSS_BUCKET }}"
+          if [[ "$OSS_ENDPOINT" =~ aliyuncs\.com ]]; then
+            echo "修正阿里云 OSS 上的 PWA 文件元数据"
+            if [ -n "$OSS_PATH" ]; then
+              MANIFEST_TARGET="oss://${OSS_BUCKET}/${OSS_PATH}manifest.webmanifest"
+              SW_TARGET="oss://${OSS_BUCKET}/${OSS_PATH}sw.js"
+            else
+              MANIFEST_TARGET="oss://${OSS_BUCKET}/manifest.webmanifest"
+              SW_TARGET="oss://${OSS_BUCKET}/sw.js"
+            fi
+            # 修正 manifest MIME 类型
+            ossutil set-meta ${MANIFEST_TARGET} \
+              Content-Type=application/manifest+json \
+              -e ${OSS_ENDPOINT} \
+              -i "${{ secrets.OSS_ACCESS_KEY_ID }}" \
+              -k "${{ secrets.OSS_SECRET_ACCESS_KEY }}"
+            # sw.js 与 manifest 不缓存，保证 PWA 更新即时生效
+            for f in ${MANIFEST_TARGET} ${SW_TARGET}; do
+              ossutil set-meta ${f} \
+                "Cache-Control=max-age=0, no-cache, no-store, must-revalidate" \
+                -e ${OSS_ENDPOINT} \
+                -i "${{ secrets.OSS_ACCESS_KEY_ID }}" \
+                -k "${{ secrets.OSS_SECRET_ACCESS_KEY }}"
+            done
+          else
+            echo "修正 S3 兼容 OSS 上的 PWA 文件元数据"
+            if [ -n "$OSS_PATH" ]; then
+              MANIFEST_TARGET="s3://${OSS_BUCKET}/${OSS_PATH}manifest.webmanifest"
+              SW_TARGET="s3://${OSS_BUCKET}/${OSS_PATH}sw.js"
+            else
+              MANIFEST_TARGET="s3://${OSS_BUCKET}/manifest.webmanifest"
+              SW_TARGET="s3://${OSS_BUCKET}/sw.js"
+            fi
+            # 修正 manifest MIME 类型（覆盖式复制同一文件以改写 Content-Type）
+            aws s3 cp ${MANIFEST_TARGET} ${MANIFEST_TARGET} \
+              --content-type "application/manifest+json" \
+              --metadata-directive REPLACE \
+              --endpoint-url ${OSS_ENDPOINT} \
+              --region ${AWS_DEFAULT_REGION}
+            # sw.js 与 manifest 不缓存
+            for f in ${MANIFEST_TARGET} ${SW_TARGET}; do
+              aws s3 cp ${f} ${f} \
+                --cache-control "max-age=0, no-cache, no-store, must-revalidate" \
+                --metadata-directive REPLACE \
+                --endpoint-url ${OSS_ENDPOINT} \
+                --region ${AWS_DEFAULT_REGION}
+            done
+          fi
