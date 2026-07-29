@@ -313,13 +313,6 @@
         "desc": "不要只是闲聊。用基于科学的 AI 来预测、验证和发现。"
       },
       {
-        "name": "AnyGen",
-        "icon": "/icons/anygen_io.ico",
-        "link": "https://www.anygen.io/",
-        "desc": "超越一键生成。与 AI 深度协同编辑，润色打磨出让你能从容分享给客户和同事的高品质成果。",
-        "requiresNonMainlandNetwork": true
-      },
-      {
         "name": "Google AI Studio",
         "icon": "/icons/aistudio_google_com.png",
         "link": "https://aistudio.google.com/",
@@ -389,6 +382,13 @@
         "icon": "/icons/notebooklm_google.svg",
         "link": "https://notebooklm.google/",
         "desc": "认识 NotebookLM：给力的 AI 研究工具与思考伙伴，可以帮助您分析来源、理清复杂的资料及转换内容。",
+        "requiresNonMainlandNetwork": true
+      },
+      {
+        "name": "AnyGen",
+        "icon": "/icons/anygen_io.ico",
+        "link": "https://www.anygen.io/",
+        "desc": "超越一键生成。与 AI 深度协同编辑，润色打磨出让你能从容分享给客户和同事的高品质成果。",
         "requiresNonMainlandNetwork": true
       },
       {
