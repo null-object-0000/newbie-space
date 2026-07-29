@@ -154,6 +154,12 @@
             "desc": "主流国产编程模型全覆盖，多生态兼容，模型工具不限，丝滑不降速！"
           }
         ]
+      },
+      {
+        "name": "毫秒镜像",
+        "icon": "/icons/1ms_run.ico",
+        "link": "https://1ms.run/",
+        "desc": "国内专线拉取镜像！国内专业的镜像仓库解决方案商，简单配置即可享受极速下载，提升容器部署效率。"
       }
     ]
   },
@@ -179,12 +185,6 @@
         "icon": "/icons/roxybrowser_com.png",
         "link": "https://roxybrowser.com/zh",
         "desc": "Roxybrowser指纹浏览器是跨境电商领域专业的电商浏览器，完美替代vps、超级浏览器，虚拟机等，一键实现多账号多开，完美实现多账号安全隔离，支持跨境电商和社媒多账号安全运营。"
-      },
-      {
-        "name": "毫秒镜像",
-        "icon": "/icons/1ms_run.ico",
-        "link": "https://1ms.run/",
-        "desc": "国内专线拉取镜像！国内专业的镜像仓库解决方案商，简单配置即可享受极速下载，提升容器部署效率。"
       },
       {
         "name": "魔戒.net",
@@ -294,12 +294,6 @@
         "desc": "LongCat，不止更快"
       },
       {
-        "name": "呜哩AI",
-        "icon": "/icons/wuli_art.ico",
-        "link": "https://wuli.art/",
-        "desc": "呜哩一下，创意开花。在这里，AI绘画与视频创作触手可及，无限灵感在社区中碰撞交融。让呜哩AI成为您的创作引擎，与您一同探索智能创作的星辰大海！"
-      },
-      {
         "name": "Kimi - 会推理解析，能深度思考的AI助手",
         "icon": "/icons/kimi_com.ico",
         "link": "https://www.kimi.com/",
@@ -400,7 +394,7 @@
   },
   {
     "name": "AI 服务",
-    "title": "API API",
+    "title": "AI API",
     "icon": "server",
     "links": [
       {
@@ -416,12 +410,6 @@
         "desc": "提供稳定可靠的API中转服务，支持ChatGPT、Claude等多种AI模型，国内直连无需代理，低延迟高并发，按量计费更经济。"
       },
       {
-        "name": "腾讯 SkillHub",
-        "icon": "/icons/skillhub_tencent_com.png",
-        "link": "https://skillhub.tencent.com/",
-        "desc": "专为中国用户优化的Skills社区，SkillHub 精选 Top 50 高质量 AI Skills，经过安全审核与多维度评估，助你发现最实用的 AI 技能。"
-      },
-      {
         "name": "Openrouter",
         "icon": "/icons/openrouter_ai.ico",
         "link": "https://openrouter.ai/",
@@ -432,6 +420,37 @@
         "icon": "/icons/qwencloud_com.png",
         "link": "https://www.qwencloud.com/",
         "desc": "Qwen Cloud is an AI-native platform powering Qwen3.6, Wan video, and CosyVoice TTS with 99.9% uptime"
+      }
+    ]
+  },
+  {
+    "name": "AI 社区",
+    "title": "AI Community",
+    "icon": "users",
+    "links": [
+      {
+        "name": "VibeCafe",
+        "icon": "/icons/vibecafe_ai.ico",
+        "link": "https://vibecafe.ai/",
+        "desc": "面向 AI 时代独立开发者与超级个体的中文社区，分享项目心得、展示作品、接单合作，还可追踪各模型的 API 用量与费用。"
+      },
+      {
+        "name": "Codex Resets",
+        "icon": "/icons/codex_resets_com.png",
+        "link": "https://codex-resets.com/",
+        "desc": "实时监控 OpenAI Codex 使用额度重置公告，显示距上次重置的时长、历史统计与可视化时间线，支持 Telegram 推送提醒。"
+      },
+      {
+        "name": "腾讯 SkillHub",
+        "icon": "/icons/skillhub_tencent_com.png",
+        "link": "https://skillhub.tencent.com/",
+        "desc": "专为中国用户优化的Skills社区，SkillHub 精选 Top 50 高质量 AI Skills，经过安全审核与多维度评估，助你发现最实用的 AI 技能。"
+      },
+      {
+        "name": "呜哩AI",
+        "icon": "/icons/wuli_art.ico",
+        "link": "https://wuli.art/",
+        "desc": "呜哩一下，创意开花。在这里，AI绘画与视频创作触手可及，无限灵感在社区中碰撞交融。让呜哩AI成为您的创作引擎，与您一同探索智能创作的星辰大海！"
       }
     ]
   }
