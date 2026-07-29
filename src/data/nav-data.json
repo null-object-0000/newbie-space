@@ -393,6 +393,19 @@
     ]
   },
   {
+    "name": "AI 创作",
+    "title": "AI Creation",
+    "icon": "sparkles",
+    "links": [
+      {
+        "name": "呜哩AI",
+        "icon": "/icons/wuli_art.ico",
+        "link": "https://wuli.art/",
+        "desc": "B站出品的 AI 创作平台，支持文生图、文生视频与画布编辑，灵感广场汇聚海量优秀作品，让 AI 绘画与视频创作触手可及。"
+      }
+    ]
+  },
+  {
     "name": "AI 服务",
     "title": "AI API",
     "icon": "server",
@@ -445,12 +458,6 @@
         "icon": "/icons/skillhub_tencent_com.png",
         "link": "https://skillhub.tencent.com/",
         "desc": "专为中国用户优化的Skills社区，SkillHub 精选 Top 50 高质量 AI Skills，经过安全审核与多维度评估，助你发现最实用的 AI 技能。"
-      },
-      {
-        "name": "呜哩AI",
-        "icon": "/icons/wuli_art.ico",
-        "link": "https://wuli.art/",
-        "desc": "呜哩一下，创意开花。在这里，AI绘画与视频创作触手可及，无限灵感在社区中碰撞交融。让呜哩AI成为您的创作引擎，与您一同探索智能创作的星辰大海！"
       }
     ]
   }
