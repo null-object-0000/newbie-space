@@ -327,35 +327,16 @@
         "requiresNonMainlandNetwork": true
       },
       {
-        "name": "Notebooklm",
-        "icon": "/icons/notebooklm_google.svg",
-        "link": "https://notebooklm.google/",
-        "desc": "认识 NotebookLM：给力的 AI 研究工具与思考伙伴，可以帮助您分析来源、理清复杂的资料及转换内容。",
-        "requiresNonMainlandNetwork": true
-      },
-      {
         "name": "Coze",
         "icon": "/icons/coze_cn.png",
         "link": "https://www.coze.cn/",
         "desc": "扣子(Coze)是基于AI Agent的智能办公平台，提供AI写作、PPT生成、网页开发与AI设计等一体化生产力工具，扣子致力于为用户与企业提供高效、安全、便捷的智能办公新体验。"
       },
       {
-        "name": "Pencil",
-        "icon": "/icons/pencil_dev.ico",
-        "link": "https://www.pencil.dev/",
-        "desc": "Pencil fundamentally increases your engineering speed by bringing designing directly into your prefe"
-      },
-      {
         "name": "Openclaw",
         "icon": "/icons/openclaw_ai.svg",
         "link": "https://openclaw.ai/",
         "desc": "OpenClaw — The AI that actually does things. Your personal assistant on any platform."
-      },
-      {
-        "name": "Stitch - Design with AI",
-        "icon": "/icons/stitch_withgoogle_com.png",
-        "link": "https://stitch.withgoogle.com/",
-        "desc": "Stitch generates UIs for mobile and web applications, making design ideation fast and easy."
       },
       {
         "name": "Hermes-agent",
@@ -402,6 +383,25 @@
         "icon": "/icons/wuli_art.ico",
         "link": "https://wuli.art/",
         "desc": "B站出品的 AI 创作平台，支持文生图、文生视频与画布编辑，灵感广场汇聚海量优秀作品，让 AI 绘画与视频创作触手可及。"
+      },
+      {
+        "name": "Notebooklm",
+        "icon": "/icons/notebooklm_google.svg",
+        "link": "https://notebooklm.google/",
+        "desc": "认识 NotebookLM：给力的 AI 研究工具与思考伙伴，可以帮助您分析来源、理清复杂的资料及转换内容。",
+        "requiresNonMainlandNetwork": true
+      },
+      {
+        "name": "Pencil",
+        "icon": "/icons/pencil_dev.ico",
+        "link": "https://www.pencil.dev/",
+        "desc": "Pencil fundamentally increases your engineering speed by bringing designing directly into your prefe"
+      },
+      {
+        "name": "Stitch - Design with AI",
+        "icon": "/icons/stitch_withgoogle_com.png",
+        "link": "https://stitch.withgoogle.com/",
+        "desc": "Stitch generates UIs for mobile and web applications, making design ideation fast and easy."
       }
     ]
   },
