@@ -15,6 +15,14 @@
 
 ## 🚀 快速开始
 
+### 生产站点与自动部署
+
+生产域名为 https://snewbie.site/，由 EdgeOne 全球可用区（含中国大陆）提供服务。
+
+提交或合并到 `main` 后，GitHub Actions 会按根路径 `/` 构建并自动部署到 EdgeOne。工作流使用仓库 Secrets `TENCENT_CLOUD_SECRET_ID` 和 `TENCENT_CLOUD_SECRET_KEY`，也可在 Actions 中手动运行。仅发布 Tag 或 Release 不会单独触发部署。
+
+Cloudflare Pages 保留为备用入口；GitHub Pages 和 OSS 的现有工作流保留。网站迁移只调整主域名的网站 CNAME 和新增 EdgeOne 验证记录，MX、SPF、DKIM 及邮件服务相关 CNAME 保持不变。
+
 ### 安装依赖
 
 ```bash
