@@ -31,4 +31,4 @@ const result = await makers.deployments.wait({
 })
 if (result.status !== 'Success') throw new Error(`EdgeOne deployment failed: ${result.status}`)
 console.log(`EdgeOne deployment ${deployment.deploymentId}: ${result.status}`)
-console.log('Site: https://snewbie.site/')
+console.log('Site: https://www.snewbie.site/')
