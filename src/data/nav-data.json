@@ -227,6 +227,12 @@
         "icon": "/icons/ip_net_coffee.svg",
         "link": "https://ip.net.coffee/",
         "desc": "查询本机 IP 地址及归属地，测试分流规则是否生效。支持国内外 35+ 网站出口 IP 检测、网络连通性测试，一键查看 Cloudflare、Discord、ChatGPT 等站点的实际出口。"
+      },
+      {
+        "name": "Tagss",
+        "icon": "tagss",
+        "link": "https://tagss.pro/",
+        "desc": "获取全球快速互联的服务，节点多，是认真挑出来的"
       }
     ]
   },
