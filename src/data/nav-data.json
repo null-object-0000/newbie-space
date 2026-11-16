@@ -230,7 +230,7 @@
       },
       {
         "name": "Tagss",
-        "icon": "tagss",
+        "icon": "/icons/tagss_pro.svg",
         "link": "https://tagss.pro/",
         "desc": "获取全球快速互联的服务，节点多，是认真挑出来的"
       }
