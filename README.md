@@ -21,7 +21,9 @@
 
 提交或合并到 `main` 后，GitHub Actions 会按根路径 `/` 构建并自动部署到 EdgeOne。工作流使用仓库 Secrets `TENCENT_CLOUD_SECRET_ID` 和 `TENCENT_CLOUD_SECRET_KEY`，也可在 Actions 中手动运行。仅发布 Tag 或 Release 不会单独触发部署。
 
-Cloudflare Pages 保留为备用入口；GitHub Pages 和 OSS 的现有工作流保留。由于 Makers 暂不支持 Cloudflare 托管的根域名直接接入，网站使用 `www` CNAME 接入 EdgeOne；根域名 DNS 保持原样，仅调整网站跳转规则。MX、SPF、DKIM 及邮件服务相关 CNAME 保持不变。
+Cloudflare Pages 保留为备用入口；GitHub Pages 工作流保留。由于 Makers 暂不支持 Cloudflare 托管的根域名直接接入，网站使用 `www` CNAME 接入 EdgeOne；根域名 DNS 保持原样，仅调整网站跳转规则。MX、SPF、DKIM 及邮件服务相关 CNAME 保持不变。
+
+> **OSS 部署已移除**：原 `Deploy to S3-compatible OSS` 工作流依赖的 `OSS_BUCKET` 已不存在（每次运行报 `NoSuchBucket`），自 2026-07 起从未成功过，且站点已由 EdgeOne 全量承载，故删除该工作流。仓库 Secrets 中的 `OSS_ACCESS_KEY_ID`、`OSS_SECRET_ACCESS_KEY`、`OSS_BUCKET`、`OSS_ENDPOINT` 已不再被任何工作流引用，可在 Settings → Secrets 中自行清理。如需恢复，见 `git log -- .github/workflows/deploy-to-oss.yml`。
 
 ### 安装依赖
 
