@@ -23,7 +23,7 @@ on:
           - 'AI 社区'
         default: '常用工具'
       description:
-        description: '网站描述（可选，会自动从网站获取）'
+        description: '网站描述（可选，会自动从网站获取；站点有反爬/人机验证时请手动填写）'
         required: false
         type: string
 
@@ -51,38 +51,41 @@ jobs:
 
       - name: Validate inputs
         id: validate
+        env:
+          INPUT_CATEGORY: ${{ inputs.category }}
         run: |
           # 检查是否选择了分类
-          CATEGORY="${{ inputs.category }}"
-          
-          if [ -z "$CATEGORY" ]; then
-            echo "error=必须选择现有分类（category）" >> $GITHUB_OUTPUT
+          if [ -z "$INPUT_CATEGORY" ]; then
+            echo "::error::必须选择现有分类（category）"
             exit 1
           fi
-          
-          echo "valid=true" >> $GITHUB_OUTPUT
+
+          echo "valid=true" >> "$GITHUB_OUTPUT"
 
       - name: Generate branch name
         id: branch
+        env:
+          INPUT_URL: ${{ inputs.url }}
         run: |
-          # 从 URL 生成分支名
-          URL="${{ inputs.url }}"
-          # 移除协议和 www
-          BRANCH_NAME=$(echo "$URL" | sed -e 's|^[^/]*//||' -e 's|^www\.||' -e 's|/.*$||' -e 's|[^a-z0-9]|-|g' | tr '[:upper:]' '[:lower:]')
-          # 添加时间戳确保唯一性
-          TIMESTAMP=$(date +%s)
-          BRANCH_NAME="add-nav-${BRANCH_NAME}-${TIMESTAMP}"
-          # 限制长度
-          BRANCH_NAME=$(echo "$BRANCH_NAME" | cut -c1-50)
-          echo "name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          # 从 URL 生成分支名：先转小写再替换非法字符，
+          # 否则大写域名会被 sed 逐个替换成一串 "-"
+          SLUG=$(printf '%s' "$INPUT_URL" \
+            | sed -e 's|^[^/]*//||' -e 's|^www\.||' -e 's|/.*$||' \
+            | tr '[:upper:]' '[:lower:]' \
+            | sed -e 's|[^a-z0-9]|-|g' -e 's|^-\+||' -e 's|-\+$||')
+          # 只截断域名部分，保留时间戳，避免截断后分支重名
+          SLUG=${SLUG:0:32}
+          echo "name=add-nav-${SLUG}-$(date +%s)" >> "$GITHUB_OUTPUT"
 
       - name: Create branch
+        env:
+          BRANCH_NAME: ${{ steps.branch.outputs.name }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # 确保从 main 分支创建新分支
-          git checkout main || git checkout master
-          git checkout -b ${{ steps.branch.outputs.name }}
+          # 始终基于远端 main 创建，避免派发分支不是 main 时出错
+          git fetch origin main
+          git checkout -B "$BRANCH_NAME" origin/main
 
       - name: Add navigation link
         env:
@@ -96,77 +99,96 @@ jobs:
         id: changes
         run: |
           if [ -n "$(git status --porcelain)" ]; then
-            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
           else
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-            echo "没有检测到更改，可能链接已存在或出现错误"
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Commit changes
         if: steps.changes.outputs.has_changes == 'true'
+        env:
+          INPUT_URL: ${{ inputs.url }}
         run: |
           git add -A
-          git commit -m "chore: 添加导航链接 - ${{ inputs.url }}"
+          git commit -m "chore: 添加导航链接 - ${INPUT_URL}"
 
       - name: Push changes
         if: steps.changes.outputs.has_changes == 'true'
+        env:
+          BRANCH_NAME: ${{ steps.branch.outputs.name }}
         run: |
-          git push origin ${{ steps.branch.outputs.name }}
+          git push origin "$BRANCH_NAME"
 
       - name: Create Pull Request
         if: steps.changes.outputs.has_changes == 'true'
         id: create-pr
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH_NAME: ${{ steps.branch.outputs.name }}
+          INPUT_URL: ${{ inputs.url }}
+          INPUT_CATEGORY: ${{ inputs.category }}
+          INPUT_DESCRIPTION: ${{ inputs.description }}
         run: |
           # 构建 PR body
           PR_BODY=$(cat <<EOF
           ## 添加导航链接
-          
-          - **URL**: ${{ inputs.url }}
-          - **分类**: ${{ inputs.category }}
+
+          - **URL**: ${INPUT_URL}
+          - **分类**: ${INPUT_CATEGORY}
           EOF
           )
-          
-          if [ -n "${{ inputs.description }}" ]; then
-            PR_BODY="$PR_BODY
-          - **描述**: ${{ inputs.description }}"
+
+          if [ -n "${INPUT_DESCRIPTION}" ]; then
+            PR_BODY="${PR_BODY}
+          - **描述**: ${INPUT_DESCRIPTION}"
           fi
-          
-          PR_BODY="$PR_BODY
-          
+
+          PR_BODY="${PR_BODY}
+
           ---
-          
+
           此 PR 由 GitHub Actions 自动创建。"
-          
-          # 使用 GitHub CLI 检查并创建 PR
-          EXISTING_PR_URL=$(gh pr list --head "${{ steps.branch.outputs.name }}" --base "main" --json url --jq '.[0].url // empty')
-          
-          if [ -n "$EXISTING_PR_URL" ]; then
-            PR_NUMBER=$(echo "$EXISTING_PR_URL" | grep -oE '[0-9]+$')
-            echo "pull-request-number=$PR_NUMBER" >> $GITHUB_OUTPUT
-            echo "pull-request-url=$EXISTING_PR_URL" >> $GITHUB_OUTPUT
-            echo "ℹ️ PR 已存在: #$PR_NUMBER"
-            echo "PR URL: $EXISTING_PR_URL"
-          else
-            PR_URL=$(gh pr create \
-              --title "添加导航链接: ${{ inputs.url }}" \
+
+          COMPARE_URL="https://github.com/${GITHUB_REPOSITORY}/compare/main...${BRANCH_NAME}?expand=1"
+
+          # 使用 GitHub CLI 创建 PR；失败时不中断任务（分支已推送，可手动补 PR）
+          if PR_URL=$(gh pr create \
+              --title "添加导航链接: ${INPUT_URL}" \
               --body "$PR_BODY" \
-              --head "${{ steps.branch.outputs.name }}" \
-              --base "main")
+              --head "$BRANCH_NAME" \
+              --base "main" 2>&1); then
             PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
-            echo "pull-request-number=$PR_NUMBER" >> $GITHUB_OUTPUT
-            echo "pull-request-url=$PR_URL" >> $GITHUB_OUTPUT
+            echo "pull-request-number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+            echo "pull-request-url=$PR_URL" >> "$GITHUB_OUTPUT"
             echo "✅ PR 创建成功: #$PR_NUMBER"
             echo "PR URL: $PR_URL"
+          else
+            # 最常见原因：仓库未开启
+            # Settings → Actions → General → Workflow permissions
+            # → "Allow GitHub Actions to create and approve pull requests"
+            echo "::warning::自动创建 PR 失败：$PR_URL"
+            {
+              echo "### ⚠️ 分支已推送，但自动创建 PR 失败"
+              echo ""
+              echo '```'
+              echo "$PR_URL"
+              echo '```'
+              echo ""
+              echo "请手动创建 PR：[${BRANCH_NAME} → main](${COMPARE_URL})"
+              echo ""
+              echo "若提示 *GitHub Actions is not permitted to create or approve pull requests*，"
+              echo "请到 **Settings → Actions → General → Workflow permissions** 勾选"
+              echo "**Allow GitHub Actions to create and approve pull requests** 后重试。"
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "分支已推送，可手动创建 PR: $COMPARE_URL"
           fi
 
       - name: Summary
         if: steps.changes.outputs.has_changes == 'false'
         run: |
-          echo "## ⚠️ 没有更改" >> $GITHUB_STEP_SUMMARY
-          echo "没有检测到任何更改。可能的原因：" >> $GITHUB_STEP_SUMMARY
-          echo "- 链接已存在于该分类中" >> $GITHUB_STEP_SUMMARY
-          echo "- 脚本执行出错" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "请检查工作流日志以获取更多信息。" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## ⚠️ 没有更改"
+            echo "没有检测到任何更改。可能的原因："
+            echo "- 链接已存在于该分类中"
+            echo "- 脚本执行出错（请查看上方日志）"
+          } >> "$GITHUB_STEP_SUMMARY"

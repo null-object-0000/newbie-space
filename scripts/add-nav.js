@@ -143,8 +143,8 @@ async function fetchWebsiteInfo(url) {
       }
     }
 
-    // 下载图标
-    if (faviconUrl) {
+    // 下载图标（data:/javascript: 之类的内联图标无法下载，跳过）
+    if (faviconUrl && !/^(data|javascript):/i.test(faviconUrl)) {
       // 处理相对路径
       let fullIconUrl = faviconUrl;
       if (faviconUrl.startsWith('//')) {
@@ -156,7 +156,10 @@ async function fetchWebsiteInfo(url) {
       }
 
       // 生成文件名
-      const iconExt = path.extname(new URL(fullIconUrl).pathname) || '.ico';
+      let iconExt = path.extname(new URL(fullIconUrl).pathname) || '.ico';
+      if (!/^\.[a-z0-9]{1,5}$/i.test(iconExt)) {
+        iconExt = '.ico';
+      }
       const iconFileName = hostname.replace(/[^a-z0-9]/gi, '_') + iconExt;
       iconPath = path.join(__dirname, '..', 'public', 'icons', iconFileName);
 
@@ -182,7 +185,8 @@ async function fetchWebsiteInfo(url) {
       title: title.substring(0, 50), // 限制长度
       description: description.substring(0, 100),
       icon: iconPath || hostname.split('.')[0].substring(0, 10),
-      hostname
+      hostname,
+      fetchFailed: false
     };
   } catch (error) {
     console.error('获取网站信息失败:', error.message);
@@ -194,7 +198,8 @@ async function fetchWebsiteInfo(url) {
       title: hostname,
       description: '',
       icon: iconMap[hostname] || hostname.split('.')[0].substring(0, 10),
-      hostname
+      hostname,
+      fetchFailed: true
     };
   }
 }
@@ -394,9 +399,12 @@ async function main() {
     }
     // 如果非交互模式没有描述，使用网站信息中的描述
     if (!description || !description.trim()) {
-      description = siteInfo.description || '';
-      if (!description || !description.trim()) {
-        throw new Error('描述不能为空（请设置 INPUT_DESCRIPTION 或 NAV_DESCRIPTION 环境变量，或确保网站有描述信息）');
+      description = (siteInfo.description || '').trim();
+      if (!description) {
+        // 站点可能开启了人机验证（如 Cloudflare 返回 403），无法自动抓取描述
+        console.warn('\n⚠️  未能自动获取网站描述（站点可能开启了反爬/人机验证）');
+        console.warn('   已使用兜底描述，请在 PR 中手动改成准确描述');
+        description = `${siteInfo.hostname} 网站导航`;
       }
     }
   } else {
